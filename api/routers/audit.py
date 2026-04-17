@@ -17,6 +17,7 @@ from api.schemas.audit import AuditRequest, AuditResponse, AuditStatus, AuditSta
 from data.cache.redis_client import job_get_status, job_set_status
 from data.database import get_db
 from data.repositories.contract_repo import get_report_by_job
+from worker.tasks.audit_task import run_audit
 
 router = APIRouter()
 
@@ -62,9 +63,6 @@ async def submit_audit(
             report=report,
             created_at=datetime.utcnow(),
         )
-
-    # Async path — queue Celery task
-    from worker.tasks.audit_task import run_audit
 
     # Initialise job status in Redis before queuing so the status
     # endpoint returns something meaningful immediately

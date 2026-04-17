@@ -15,13 +15,15 @@ Design principles:
 """
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
 import re
 import uuid
 from abc import ABC, abstractmethod
+from datetime import date, datetime
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from api.schemas.report import Finding, Severity, VulnerabilityCategory
 from core.parser.entity_extractor import ParsedContract
@@ -29,6 +31,18 @@ from core.parser.entity_extractor import ParsedContract
 logger = logging.getLogger(__name__)
 
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
+
+
+def _json_default(obj: Any) -> Any:
+    """JSON encoder for dataclass fields that may contain date/datetime objects."""
+    if isinstance(obj, (date, datetime)):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+
+def _dc_list(items: list) -> list[dict]:
+    """Convert a list of dataclasses to a list of dicts for JSON serialisation."""
+    return [dataclasses.asdict(item) for item in items]
 
 
 class AnalyzerError(Exception):
@@ -124,22 +138,22 @@ class BaseAnalyzer(ABC):
         if contract.named_entities:
             sections.append(
                 "NAMED ENTITIES (extracted by parser):\n"
-                + json.dumps(contract.named_entities, indent=2)
+                + json.dumps(_dc_list(contract.named_entities), indent=2, default=_json_default)
             )
         if contract.thresholds:
             sections.append(
                 "NUMERIC THRESHOLDS:\n"
-                + json.dumps(contract.thresholds, indent=2)
+                + json.dumps(_dc_list(contract.thresholds), indent=2, default=_json_default)
             )
         if contract.timeframes:
             sections.append(
                 "TIMEFRAMES & DATE REFERENCES:\n"
-                + json.dumps(contract.timeframes, indent=2)
+                + json.dumps(_dc_list(contract.timeframes), indent=2, default=_json_default)
             )
         if contract.key_terms:
             sections.append(
                 "KEY TERMS FLAGGED FOR AMBIGUITY:\n"
-                + json.dumps(contract.key_terms, indent=2)
+                + json.dumps(_dc_list(contract.key_terms), indent=2, default=_json_default)
             )
 
         return "\n\n".join(sections)

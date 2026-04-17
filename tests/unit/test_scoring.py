@@ -179,4 +179,4 @@ def test_two_critical_cap_sets_correct_label():
     calc = RCSCalculator()
     findings = [make_finding(Severity.critical)] * 2
     result = calc.calculate(findings)
-    assert result.score_label == "High risk"   # score=25 → "High risk"
+    assert result.score_label == "Critical \u2014 do not publish"   # score=25 < 30 → "Critical — do not publish"
