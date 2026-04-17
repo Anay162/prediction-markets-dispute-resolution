@@ -84,10 +84,22 @@ jobs:
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
 
+      - name: Check KUBECONFIG secret
+        id: check
+        run: |
+          if [ -n "${{ secrets.KUBECONFIG }}" ]; then
+            echo "configured=true" >> $GITHUB_OUTPUT
+          else
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "::notice::KUBECONFIG secret not configured — skipping Kubernetes deploy"
+          fi
+
       - name: Configure kubeconfig
+        if: steps.check.outputs.configured == 'true'
         run: echo "${{ secrets.KUBECONFIG }}" | base64 -d > /tmp/kubeconfig
 
       - name: Update image tags in manifests
+        if: steps.check.outputs.configured == 'true'
         run: |
           TAG=${{ needs.build-and-push.outputs.tag }}
           REGISTRY=${{ env.REGISTRY }}
@@ -96,12 +108,14 @@ jobs:
           sed -i "s|REGISTRY_PLACEHOLDER/contract-auditor-worker:TAG_PLACEHOLDER|${REGISTRY}/${PREFIX}-worker:${TAG}|g" infra/k8s/worker-deployment.yaml
 
       - name: Apply manifests
+        if: steps.check.outputs.configured == 'true'
         run: |
           export KUBECONFIG=/tmp/kubeconfig
           kubectl apply -f infra/k8s/api-deployment.yaml
           kubectl apply -f infra/k8s/worker-deployment.yaml
 
       - name: Wait for rollout
+        if: steps.check.outputs.configured == 'true'
         run: |
           export KUBECONFIG=/tmp/kubeconfig
           kubectl rollout status deployment/contract-auditor-api -n contract-auditor --timeout=120s
