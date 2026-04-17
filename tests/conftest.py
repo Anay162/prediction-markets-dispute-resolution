@@ -355,11 +355,20 @@ async def async_client():
     AsyncClient pointed at the FastAPI app with mocked dependencies.
     DB and Redis are not initialised — routes that need them must mock separately.
     """
+    from unittest.mock import MagicMock
+
     from api.dependencies import require_api_key_with_rate_limit
     from api.main import app
+    from data.database import get_db
 
     # Override auth so tests don't need a real API key
     app.dependency_overrides[require_api_key_with_rate_limit] = lambda: "test-key"
+
+    # Override get_db so routes don't need init_db() to have been called
+    async def _mock_get_db():
+        yield MagicMock()
+
+    app.dependency_overrides[get_db] = _mock_get_db
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
