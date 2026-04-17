@@ -1,0 +1,19 @@
+{
+  "_comment": "Threshold gaming test. Single-day stock close with known options expiration pressure. Expected: high/critical threshold_gaming findings.",
+  "question": "Will NVDA close above $1000 on the third Friday of December 2025?",
+  "resolution_criteria": "This market resolves YES if the NASDAQ closing price of NVIDIA Corporation (NVDA) is above $1,000.00 on the third Friday of December 2025 (December 19, 2025). Resolution is based on the official NASDAQ closing price as reported by major financial data providers.",
+  "resolution_source": "NASDAQ official closing price for NVDA on December 19, 2025, as reported by Bloomberg or Yahoo Finance.",
+  "close_date": "2025-12-19",
+  "platform": "kalshi",
+  "expected_score_max": 55,
+  "expected_categories": ["threshold_gaming", "definitional_ambiguity", "source_failure"],
+  "known_vulnerabilities": [
+    "December third Friday is a known monthly options expiration date — heavy manipulation pressure",
+    "'Above $1000' is ambiguous — strictly greater than or greater than or equal to at exactly $1000.00?",
+    "Bloomberg vs Yahoo Finance may report slightly different closing prices due to after-hours adjustments",
+    "No specification of which closing price — regular session close vs extended hours",
+    "'Major financial data providers' is undefined — which one takes precedence in case of conflict?",
+    "Stock split risk: if NVDA splits before December 19, the threshold becomes meaningless",
+    "No corporate actions clause: acquisition or delisting between now and close date"
+  ]
+}

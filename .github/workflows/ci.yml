@@ -1,0 +1,169 @@
+# .github/workflows/ci.yml
+# CI pipeline: lint → type-check → unit tests → integration tests → eval gate
+# Runs on every PR and push to main.
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+
+  # ------------------------------------------------------------------
+  # Lint and type check
+  # ------------------------------------------------------------------
+  lint:
+    name: Lint & type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dev dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: mypy type check
+        run: mypy api core data integrations worker
+        continue-on-error: true   # Warnings only until we reach full strict coverage
+
+  # ------------------------------------------------------------------
+  # Unit tests (no external services)
+  # ------------------------------------------------------------------
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run unit tests
+        run: |
+          pytest tests/unit \
+            --cov=core --cov=api \
+            --cov-report=term-missing \
+            --cov-fail-under=70 \
+            -v
+        env:
+          ANTHROPIC_API_KEY: "not-needed-for-unit-tests"
+          OPENAI_API_KEY: "not-needed-for-unit-tests"
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: false
+
+  # ------------------------------------------------------------------
+  # Integration tests (with postgres + redis via Docker)
+  # ------------------------------------------------------------------
+  integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: contract_auditor_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run migrations
+        run: alembic upgrade head
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/contract_auditor_test
+
+      - name: Run integration tests
+        run: |
+          pytest tests/integration \
+            -v \
+            --timeout=60
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/contract_auditor_test
+          REDIS_URL: redis://localhost:6379/0
+          CELERY_BROKER_URL: redis://localhost:6379/1
+          CELERY_RESULT_BACKEND: redis://localhost:6379/2
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_TEST }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY_TEST }}
+          SECRET_KEY: "ci-test-secret-key"
+          API_KEY_SALT: "ci-test-salt"
+
+  # ------------------------------------------------------------------
+  # Eval gate — must pass before merging to main
+  # Only runs when ANTHROPIC_API_KEY_TEST secret is available
+  # ------------------------------------------------------------------
+  eval-gate:
+    name: Eval gate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [unit-tests, integration-tests]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run eval harness
+        run: python -m tests.evals.run_evals
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_TEST }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY_TEST }}
+          DATABASE_URL: "not-needed-for-evals"

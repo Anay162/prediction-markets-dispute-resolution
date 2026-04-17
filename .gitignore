@@ -1,0 +1,193 @@
+# =============================================================
+# contract-auditor .gitignore
+# =============================================================
+
+# -------------------------------------------------------------
+# Environment & secrets — never commit these
+# -------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.p12
+*.pfx
+secrets.yaml
+
+# Keep the templates
+!.env.example
+!.env.test
+
+# -------------------------------------------------------------
+# Python
+# -------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.Python
+
+# Type checking & linting caches
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.pytype/
+
+# Test & coverage
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+coverage/
+htmlcov/
+*.cover
+nosetests.xml
+test-results/
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# Distribution / packaging
+*.whl
+*.tar.gz
+
+# -------------------------------------------------------------
+# Alembic
+# -------------------------------------------------------------
+# Don't ignore migration files — they are source code
+# Only ignore the generated state file
+alembic/versions/*.pyc
+
+# -------------------------------------------------------------
+# Node / Next.js (dashboard/)
+# -------------------------------------------------------------
+node_modules/
+.next/
+out/
+.nuxt/
+.cache/
+.parcel-cache/
+.turbo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Next.js build output
+dashboard/.next/
+dashboard/out/
+dashboard/node_modules/
+
+# -------------------------------------------------------------
+# Docker
+# -------------------------------------------------------------
+# Don't ignore Dockerfiles — they are source code
+.docker/
+
+# -------------------------------------------------------------
+# Celery
+# -------------------------------------------------------------
+celerybeat-schedule
+celerybeat.pid
+/tmp/celerybeat-schedule
+
+# -------------------------------------------------------------
+# Logs
+# -------------------------------------------------------------
+*.log
+logs/
+log/
+
+# -------------------------------------------------------------
+# Database & storage
+# -------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+pgdata/
+redis-data/
+
+# PDF exports (generated at runtime)
+*.pdf
+
+# -------------------------------------------------------------
+# OS
+# -------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# -------------------------------------------------------------
+# IDE & editors
+# -------------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# -------------------------------------------------------------
+# CI / deployment state
+# -------------------------------------------------------------
+# Kubernetes secrets with real values — the template is committed
+# infra/k8s/secrets.yaml is committed (it has no real values)
+kubeconfig
+*.kubeconfig
+
+# Terraform state (if added later)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# -------------------------------------------------------------
+# Project-specific runtime artifacts
+# -------------------------------------------------------------
+# WeasyPrint font cache
+.weasyprint/
+
+# Celery beat schedule persistence
+celerybeat-schedule.db
+
+# Embedding index artifacts
+*.faiss
+*.index
+
+# Scraped data dumps (committed via seed_disputes.py, not raw files)
+data/raw/
+scrape_cache/

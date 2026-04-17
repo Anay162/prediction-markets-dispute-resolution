@@ -1,0 +1,25 @@
+{
+  "_comment": "Adversarial resolution test. Language with multiple textual exploit surfaces. Expected: high/critical adversarial_resolution and scope_creep findings.",
+  "question": "Will Company X complete its merger with Company Y by Q3 2025?",
+  "resolution_criteria": "This market resolves YES if the merger between Company X (NASDAQ: CMPX) and Company Y (NYSE: CMPY) is completed, including all necessary regulatory approvals, by the end of Q3 2025. Resolution will be based on major news sources confirming the merger completion.",
+  "resolution_source": "Major financial news outlets including Bloomberg, Reuters, and the Wall Street Journal.",
+  "close_date": "2025-09-30",
+  "platform": "manifold",
+  "expected_score_max": 45,
+  "expected_categories": [
+    "adversarial_resolution",
+    "scope_creep",
+    "timing_ambiguity",
+    "definitional_ambiguity"
+  ],
+  "known_vulnerabilities": [
+    "EXPLOIT: 'Completed' is undefined — board approval vs shareholder vote vs regulatory clearance vs actual closing date are all different events",
+    "EXPLOIT: 'Including all necessary regulatory approvals' — a bad actor can argue the merger 'completed' in a technical sense before all approvals",
+    "EXPLOIT: 'Major news sources confirming' — conflicting reports between sources with no tie-breaking rule; bad actor floods with conflicting sources",
+    "EXPLOIT: Q3 2025 end could be September 30 calendar year OR a fiscal Q3 depending on which company's fiscal year is used",
+    "EXPLOIT: No timezone on 'end of Q3'",
+    "SCOPE: Company X could be acquired by a third party before the merger completes, making the contract's subject moot",
+    "SCOPE: Either company could be delisted, renamed, or have a major corporate restructuring",
+    "DEFINITIONAL: 'Completed' vs 'announced complete' vs 'effective date' are different things in M&A law"
+  ]
+}

@@ -1,0 +1,67 @@
+# docker-compose.prod.yml
+# Production overrides. Use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Key differences from dev:
+#   - No source volume mounts (baked image only)
+#   - No --reload flag
+#   - More workers, production log level
+#   - No Flower monitoring by default
+#   - Postgres and Redis point to external managed services (override via env)
+
+version: "3.9"
+
+services:
+
+  # In production, postgres and redis are external managed services.
+  # Remove those service blocks entirely and set DATABASE_URL / REDIS_URL
+  # in the environment to point at RDS / ElastiCache.
+  postgres:
+    profiles:
+      - local-db-only   # Don't start postgres in prod unless explicitly requested
+
+  redis:
+    profiles:
+      - local-redis-only
+
+  api:
+    command: >
+      uvicorn api.main:app
+      --host 0.0.0.0
+      --port 8000
+      --workers 4
+      --log-level info
+    volumes: []   # No source mount in production
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+
+  worker:
+    command: >
+      celery -A worker.celery_app worker
+      --queues audits
+      --concurrency 4
+      --loglevel info
+      --max-tasks-per-child 100
+    volumes: []
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 3G
+
+  scraper-worker:
+    volumes: []
+    restart: always
+
+  beat:
+    volumes: []
+    restart: always
+
+  flower:
+    profiles:
+      - monitoring

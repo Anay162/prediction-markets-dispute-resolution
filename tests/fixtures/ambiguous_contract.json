@@ -1,0 +1,22 @@
+{
+  "_comment": "Deliberately ambiguous. Expected: RCS <= 60, multiple high/critical findings across definitional_ambiguity and timing_ambiguity.",
+  "question": "Will US GDP growth exceed 2% in 2025?",
+  "resolution_criteria": "This market resolves YES if US GDP growth exceeds 2% in 2025. Resolution will be based on official government data. The market closes at end of year.",
+  "resolution_source": "https://www.bea.gov/data/gdp/gross-domestic-product",
+  "close_date": "2025-12-31",
+  "platform": "generic",
+  "expected_score_max": 60,
+  "expected_categories": [
+    "definitional_ambiguity",
+    "timing_ambiguity",
+    "threshold_gaming"
+  ],
+  "known_vulnerabilities": [
+    "No timezone on 'end of year'",
+    "'exceeds' is ambiguous — strictly greater than vs greater than or equal to",
+    "GDP not specified as real vs nominal",
+    "No specification of advance vs revised estimate",
+    "No fallback if BEA page URL changes",
+    "'Official government data' is undefined"
+  ]
+}

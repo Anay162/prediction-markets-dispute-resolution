@@ -1,0 +1,42 @@
+# Dockerfile.worker
+# Celery worker image. Leaner than the API image — no WeasyPrint,
+# no uvicorn. Shares the same base Python deps.
+
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml .
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -e "." --target /build/deps
+
+
+# ---------------------------------------------------------------------------
+FROM python:3.11-slim AS runtime
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /build/deps /usr/local/lib/python3.11/site-packages
+
+COPY . .
+
+RUN groupadd -r celeryuser && useradd -r -g celeryuser celeryuser \
+    && chown -R celeryuser:celeryuser /app
+USER celeryuser
+
+# Default: audit queue worker with concurrency 2
+# Beat scheduler is run as a separate container (see docker-compose)
+CMD ["celery", "-A", "worker.celery_app", "worker", \
+     "--queues", "audits", \
+     "--concurrency", "2", \
+     "--loglevel", "info", \
+     "--max-tasks-per-child", "50"]

@@ -1,0 +1,14 @@
+# golden_set.jsonl
+# Human-labeled ground truth for the eval harness.
+# Each line is a JSON object mapping a fixture file to expected findings.
+# Format:
+#   fixture: filename in tests/fixtures/contracts/
+#   expected_categories: list of VulnerabilityCategory values that MUST be found
+#   expected_score_min / expected_score_max: RCS bounds
+#   notes: human annotation
+
+{"fixture": "clean_contract.json", "expected_categories": [], "expected_score_min": 85, "notes": "Well-specified contract with pinned BEA advance estimate, timezone, fallback, and methodology version. Should have zero or one low finding at most."}
+{"fixture": "ambiguous_contract.json", "expected_categories": ["definitional_ambiguity", "timing_ambiguity", "threshold_gaming"], "expected_score_max": 60, "notes": "Classic GDP contract with no timezone, no release spec, no 'real vs nominal' distinction. All three categories should be flagged."}
+{"fixture": "source_failure.json", "expected_categories": ["source_failure", "timing_ambiguity"], "expected_score_max": 50, "notes": "Twitter URL as source. Source failure is certain — social media URLs are ephemeral, require auth, and tweets can be deleted. Timing ambiguity from missing timezone."}
+{"fixture": "threshold_gaming.json", "expected_categories": ["threshold_gaming", "definitional_ambiguity"], "expected_score_max": 55, "notes": "Single-day stock close on known options expiration. Threshold gaming (manipulation pressure + source conflict) and definitional ambiguity ('above' boundary ambiguity)."}
+{"fixture": "adversarial.json", "expected_categories": ["adversarial_resolution", "scope_creep", "timing_ambiguity", "definitional_ambiguity"], "expected_score_max": 45, "notes": "Merger contract with maximum adversarial surface: undefined completion, news-source aggregation with no tie-breaking, Q3 fiscal vs calendar ambiguity, and no corporate actions clause."}

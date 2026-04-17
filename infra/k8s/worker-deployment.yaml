@@ -1,0 +1,185 @@
+# infra/k8s/worker-deployment.yaml
+# Celery audit worker + scraper worker + beat scheduler Deployments
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contract-auditor-worker
+  namespace: contract-auditor
+  labels:
+    app: contract-auditor
+    component: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: contract-auditor
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: contract-auditor
+        component: worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: worker
+          image: REGISTRY_PLACEHOLDER/contract-auditor-worker:TAG_PLACEHOLDER
+          imagePullPolicy: Always
+          command:
+            - celery
+            - -A
+            - worker.celery_app
+            - worker
+            - --queues
+            - audits
+            - --concurrency
+            - "4"
+            - --loglevel
+            - info
+            - --max-tasks-per-child
+            - "100"
+          envFrom:
+            - secretRef:
+                name: app-secrets
+          env:
+            - name: APP_ENV
+              value: production
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "3Gi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      terminationGracePeriodSeconds: 60   # Let in-flight audits finish
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contract-auditor-scraper
+  namespace: contract-auditor
+  labels:
+    app: contract-auditor
+    component: scraper
+spec:
+  replicas: 1   # Single scraper worker — scraping doesn't need parallelism
+  selector:
+    matchLabels:
+      app: contract-auditor
+      component: scraper
+  template:
+    metadata:
+      labels:
+        app: contract-auditor
+        component: scraper
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: scraper
+          image: REGISTRY_PLACEHOLDER/contract-auditor-worker:TAG_PLACEHOLDER
+          imagePullPolicy: Always
+          command:
+            - celery
+            - -A
+            - worker.celery_app
+            - worker
+            - --queues
+            - scrapers
+            - --concurrency
+            - "1"
+            - --loglevel
+            - info
+          envFrom:
+            - secretRef:
+                name: app-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contract-auditor-beat
+  namespace: contract-auditor
+  labels:
+    app: contract-auditor
+    component: beat
+spec:
+  replicas: 1   # Beat must always be a single instance
+  selector:
+    matchLabels:
+      app: contract-auditor
+      component: beat
+  template:
+    metadata:
+      labels:
+        app: contract-auditor
+        component: beat
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: beat
+          image: REGISTRY_PLACEHOLDER/contract-auditor-worker:TAG_PLACEHOLDER
+          imagePullPolicy: Always
+          command:
+            - celery
+            - -A
+            - worker.celery_app
+            - beat
+            - --schedule
+            - /tmp/celerybeat-schedule
+            - --loglevel
+            - info
+          envFrom:
+            - secretRef:
+                name: app-secrets
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: beat-schedule
+              mountPath: /tmp
+      volumes:
+        - name: beat-schedule
+          emptyDir: {}

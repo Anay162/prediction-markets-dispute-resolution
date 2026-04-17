@@ -1,0 +1,18 @@
+{
+  "_comment": "Source failure test. Twitter URL as resolution source. Expected: critical source_failure finding.",
+  "question": "Will Elon Musk tweet about Dogecoin before December 31, 2025?",
+  "resolution_criteria": "This market resolves YES if the Twitter/X account @elonmusk publishes any tweet or post containing the word 'Dogecoin' or the ticker 'DOGE' before December 31, 2025.",
+  "resolution_source": "https://twitter.com/elonmusk",
+  "close_date": "2025-12-31",
+  "platform": "polymarket",
+  "expected_score_max": 50,
+  "expected_categories": ["source_failure", "timing_ambiguity"],
+  "known_vulnerabilities": [
+    "Twitter.com URL requires authentication to view — may not be accessible to all resolvers",
+    "Tweets can be deleted after posting — no archival requirement specified",
+    "Twitter/X has changed its URL structure multiple times",
+    "Account could be suspended, restricted, or renamed",
+    "No timezone on 'before December 31'",
+    "No definition of what counts as a 'tweet' vs a 'reply' vs a 'retweet'"
+  ]
+}

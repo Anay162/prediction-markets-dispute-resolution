@@ -1,0 +1,11 @@
+{
+  "_comment": "Well-specified contract. Expected: RCS >= 85, zero critical/high findings.",
+  "question": "Will the BEA advance estimate of annualised US real GDP growth for Q4 2025 be strictly greater than 2.0%, as published on or before February 28, 2026?",
+  "resolution_criteria": "This market resolves YES if and only if the Bureau of Economic Analysis (BEA) advance estimate of annualised real US GDP growth (seasonally adjusted annual rate) for Q4 2025 is strictly greater than 2.0% (i.e., reported as 2.01% or higher with no rounding). Resolution uses ONLY the advance estimate published by the BEA within 30 calendar days of December 31, 2025. No subsequent preliminary or final/revised estimates shall apply to this market's resolution. If the BEA advance estimate for Q4 2025 is not published by February 28, 2026 at 11:59:59 PM UTC, this market resolves N/A. In the event the BEA changes its real GDP methodology before the publication date, the resolver shall apply the methodology in effect as of January 1, 2025.",
+  "resolution_source": "Bureau of Economic Analysis (BEA) National Income and Product Accounts, Table 1.1.1 — Percent Change From Preceding Period in Real Gross Domestic Product. Stable API endpoint: https://apps.bea.gov/api/data?UserID=DEMO&method=GetData&DataSetName=NIPA&TableName=T10101&Frequency=Q&Year=2025&ResultFormat=JSON",
+  "close_date": "2026-03-01",
+  "platform": "generic",
+  "expected_score_min": 85,
+  "expected_findings_max": 2,
+  "expected_severities": ["low"]
+}

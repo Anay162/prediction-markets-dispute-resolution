@@ -1,0 +1,194 @@
+# docker-compose.yml
+# Local development stack.
+# All services run together; hot-reload is enabled for the API.
+#
+# Usage:
+#   docker compose up                     # Start everything
+#   docker compose up api worker          # Start only app services
+#   docker compose run api alembic upgrade head  # Run migrations
+#   docker compose run api python -m scripts.seed_disputes
+
+version: "3.9"
+
+x-common-env: &common-env
+  DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/contract_auditor
+  REDIS_URL: redis://redis:6379/0
+  CELERY_BROKER_URL: redis://redis:6379/1
+  CELERY_RESULT_BACKEND: redis://redis:6379/2
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
+  PRIMARY_MODEL: claude-sonnet-4-20250514
+  SECRET_KEY: ${SECRET_KEY:-dev-insecure-key-change-in-production}
+  API_KEY_SALT: ${API_KEY_SALT:-dev-salt-change-in-production}
+  APP_ENV: development
+  LOG_LEVEL: DEBUG
+  OPENCORPORATES_API_KEY: ${OPENCORPORATES_API_KEY:-}
+  POLYGON_API_KEY: ${POLYGON_API_KEY:-}
+
+services:
+
+  # ------------------------------------------------------------------
+  # PostgreSQL with pgvector extension
+  # ------------------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: contract_auditor
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ------------------------------------------------------------------
+  # Redis (broker + result backend + cache)
+  # ------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ------------------------------------------------------------------
+  # Database migrations (run once, then exit)
+  # ------------------------------------------------------------------
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    command: alembic upgrade head
+    environment:
+      <<: *common-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ------------------------------------------------------------------
+  # FastAPI API server
+  # ------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    command: >
+      uvicorn api.main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --log-level debug
+    environment:
+      <<: *common-env
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app   # Mount source for hot-reload in dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import httpx; httpx.get('http://localhost:8000/health').raise_for_status()\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ------------------------------------------------------------------
+  # Celery audit worker
+  # ------------------------------------------------------------------
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: >
+      celery -A worker.celery_app worker
+      --queues audits
+      --concurrency 2
+      --loglevel debug
+      --max-tasks-per-child 50
+    environment:
+      <<: *common-env
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------
+  # Celery scraper worker (separate queue, separate concurrency)
+  # ------------------------------------------------------------------
+  scraper-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: >
+      celery -A worker.celery_app worker
+      --queues scrapers
+      --concurrency 1
+      --loglevel info
+    environment:
+      <<: *common-env
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------
+  # Celery Beat scheduler (nightly scrapes, 6h re-index)
+  # ------------------------------------------------------------------
+  beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: >
+      celery -A worker.celery_app beat
+      --schedule /tmp/celerybeat-schedule
+      --loglevel info
+    environment:
+      <<: *common-env
+    volumes:
+      - .:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------
+  # Flower — Celery monitoring UI (dev only)
+  # ------------------------------------------------------------------
+  flower:
+    image: mher/flower:2.0
+    command: celery flower --broker=redis://redis:6379/1 --port=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    profiles:
+      - monitoring   # Only start with: docker compose --profile monitoring up
+
+volumes:
+  postgres_data:
+  redis_data:
