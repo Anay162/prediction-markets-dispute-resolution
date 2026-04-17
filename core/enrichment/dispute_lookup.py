@@ -6,6 +6,7 @@ using vector similarity search against the disputes table.
 
 Used by AdversarialResolutionAnalyzer and as general enrichment context.
 """
+
 from __future__ import annotations
 
 import logging

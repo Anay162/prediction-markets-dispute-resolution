@@ -11,12 +11,12 @@ Handles:
   - Writing back to the vector columns
   - Progress reporting
 """
+
 from __future__ import annotations
 
 import asyncio
 import logging
 from dataclasses import dataclass
-from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,7 +27,7 @@ from data.embeddings.vector_store import upsert_contract_embedding, upsert_dispu
 logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 20
-INTER_BATCH_DELAY = 0.5   # Seconds between batches to respect rate limits
+INTER_BATCH_DELAY = 0.5  # Seconds between batches to respect rate limits
 
 
 @dataclass
@@ -49,9 +49,7 @@ async def index_unembedded_disputes(
     from data.models.dispute import DisputeRecord
 
     result = await db.execute(
-        select(DisputeRecord)
-        .where(DisputeRecord.embedding == None)
-        .limit(limit)
+        select(DisputeRecord).where(DisputeRecord.embedding == None).limit(limit)
     )
     records = result.scalars().all()
     total = len(records)
@@ -64,10 +62,9 @@ async def index_unembedded_disputes(
     embedded, failed = 0, 0
 
     for i in range(0, total, BATCH_SIZE):
-        batch = records[i:i + BATCH_SIZE]
+        batch = records[i : i + BATCH_SIZE]
         texts = [
-            f"{r.question} {r.resolution_criteria or ''} {r.dispute_reason or ''}"
-            for r in batch
+            f"{r.question} {r.resolution_criteria or ''} {r.dispute_reason or ''}" for r in batch
         ]
         try:
             embeddings = await embed_batch(llm_client, texts, batch_size=BATCH_SIZE)
@@ -76,7 +73,7 @@ async def index_unembedded_disputes(
                 embedded += 1
             await db.flush()
         except Exception as e:
-            logger.error(f"Batch {i}–{i+BATCH_SIZE} embed failed: {e}")
+            logger.error(f"Batch {i}–{i + BATCH_SIZE} embed failed: {e}")
             failed += len(batch)
 
         if i + BATCH_SIZE < total:
@@ -98,11 +95,7 @@ async def index_unembedded_contracts(
     """
     from data.models.contract import Contract
 
-    result = await db.execute(
-        select(Contract)
-        .where(Contract.embedding == None)
-        .limit(limit)
-    )
+    result = await db.execute(select(Contract).where(Contract.embedding == None).limit(limit))
     records = result.scalars().all()
     total = len(records)
 
@@ -113,11 +106,8 @@ async def index_unembedded_contracts(
     embedded, failed = 0, 0
 
     for i in range(0, total, BATCH_SIZE):
-        batch = records[i:i + BATCH_SIZE]
-        texts = [
-            f"{r.question} {r.resolution_criteria} {r.resolution_source}"
-            for r in batch
-        ]
+        batch = records[i : i + BATCH_SIZE]
+        texts = [f"{r.question} {r.resolution_criteria} {r.resolution_source}" for r in batch]
         try:
             embeddings = await embed_batch(llm_client, texts, batch_size=BATCH_SIZE)
             for record, embedding in zip(batch, embeddings):
@@ -125,7 +115,7 @@ async def index_unembedded_contracts(
                 embedded += 1
             await db.flush()
         except Exception as e:
-            logger.error(f"Batch {i}–{i+BATCH_SIZE} embed failed: {e}")
+            logger.error(f"Batch {i}–{i + BATCH_SIZE} embed failed: {e}")
             failed += len(batch)
 
         if i + BATCH_SIZE < total:

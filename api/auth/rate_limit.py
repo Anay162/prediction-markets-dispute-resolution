@@ -6,6 +6,7 @@ Per-API-key token bucket rate limiter backed by Redis.
 Uses a sliding window counter: each key gets a bucket of N tokens
 per minute. A Lua script handles the check-and-decrement atomically.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -53,11 +54,11 @@ async def check_rate_limit(api_key: str) -> bool:
 
     result = await redis.eval(
         _RATE_LIMIT_LUA,
-        1,                      # Number of keys
-        bucket_key,             # KEYS[1]
-        RATE_LIMIT_RPM,         # ARGV[1]: max requests
-        window_ms,              # ARGV[2]: window in ms
-        now_ms,                 # ARGV[3]: current time in ms
+        1,  # Number of keys
+        bucket_key,  # KEYS[1]
+        RATE_LIMIT_RPM,  # ARGV[1]: max requests
+        window_ms,  # ARGV[2]: window in ms
+        now_ms,  # ARGV[3]: current time in ms
     )
     return bool(result)
 

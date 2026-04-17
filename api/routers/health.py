@@ -7,6 +7,7 @@ Health and readiness probes for Kubernetes and load balancer checks.
     GET /ready    Readiness probe — can the app serve traffic?
                   Checks DB and Redis connectivity.
 """
+
 from __future__ import annotations
 
 from fastapi import APIRouter
@@ -32,8 +33,10 @@ async def ready():
 
     # Check database
     try:
-        from data.database import get_session
         from sqlalchemy import text
+
+        from data.database import get_session
+
         async with get_session() as db:
             await db.execute(text("SELECT 1"))
         checks["database"] = "ok"
@@ -44,6 +47,7 @@ async def ready():
     # Check Redis
     try:
         from data.cache.redis_client import get_redis
+
         await get_redis().ping()
         checks["redis"] = "ok"
     except Exception as e:

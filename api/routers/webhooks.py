@@ -7,6 +7,7 @@ scoring calibration loop.
 
     POST /v1/webhooks/outcome    Record a market resolution outcome
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -18,7 +19,7 @@ from fastapi import APIRouter, Header, HTTPException, Request
 
 from api.dependencies import DBDep
 from api.schemas.webhook import OutcomeWebhookPayload, WebhookAck
-from data.repositories.contract_repo import get_report_by_job, get_contract
+from data.repositories.contract_repo import get_report_by_job
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -60,6 +61,7 @@ async def receive_outcome(
     failure_category = _classify_failure(body.failure_description)
 
     from data.repositories.outcome_repo import create_outcome
+
     outcome = await create_outcome(
         db=db,
         contract_id=body.contract_id,

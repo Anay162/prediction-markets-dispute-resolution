@@ -2,14 +2,14 @@
 Pydantic schemas for contract input and storage.
 These are the data shapes that enter the system from the outside world.
 """
+
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, date
+from datetime import date, datetime
 from enum import Enum
-from typing import Optional
 
-from pydantic import BaseModel, HttpUrl, field_validator, model_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 
 class Platform(str, Enum):
@@ -25,12 +25,13 @@ class ContractInput(BaseModel):
     The raw contract submitted for audit.
     This is exactly what a platform operator pastes in or sends via API.
     """
+
     question: str
     resolution_criteria: str
-    resolution_source: str          # URL or plain-text description of source
+    resolution_source: str  # URL or plain-text description of source
     close_date: date
     platform: Platform = Platform.generic
-    metadata: dict = {}             # Platform-specific passthrough fields
+    metadata: dict = {}  # Platform-specific passthrough fields
 
     @field_validator("question")
     @classmethod
@@ -69,6 +70,7 @@ class ContractDB(BaseModel):
     """
     Contract as stored in the database, after being assigned an ID.
     """
+
     id: uuid.UUID
     question: str
     resolution_criteria: str
@@ -84,6 +86,7 @@ class ContractDB(BaseModel):
 
 class ContractSummary(BaseModel):
     """Lightweight contract representation for list views."""
+
     id: uuid.UUID
     question: str
     platform: Platform

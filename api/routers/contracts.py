@@ -6,16 +6,15 @@ Contract management endpoints:
     GET    /v1/contracts/{id}         Get a single contract
     DELETE /v1/contracts/{id}         Delete a contract
 """
+
 from __future__ import annotations
 
 import uuid
 
 from fastapi import APIRouter, HTTPException
-from sqlalchemy import select, delete
 
 from api.dependencies import AuthDep, DBDep
 from api.schemas.contract import ContractDB, ContractSummary
-from data.models.contract import Contract
 from data.repositories.contract_repo import get_contract, list_contracts
 
 router = APIRouter()

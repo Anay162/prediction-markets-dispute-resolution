@@ -2,21 +2,21 @@
 Pydantic schemas for audit findings and the final report output.
 These are the shapes that come OUT of the audit engine.
 """
+
 from __future__ import annotations
 
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
 
 class Severity(str, Enum):
-    critical = "critical"   # Contract will almost certainly fail to resolve cleanly
-    high = "high"           # Significant risk of dispute or ambiguous resolution
-    medium = "medium"       # Exploitable but requires effort or specific conditions
-    low = "low"             # Minor ambiguity, unlikely to cause real problems
+    critical = "critical"  # Contract will almost certainly fail to resolve cleanly
+    high = "high"  # Significant risk of dispute or ambiguous resolution
+    medium = "medium"  # Exploitable but requires effort or specific conditions
+    low = "low"  # Minor ambiguity, unlikely to cause real problems
 
 
 class VulnerabilityCategory(str, Enum):
@@ -33,6 +33,7 @@ class Finding(BaseModel):
     A single identified vulnerability in a contract.
     This is the atomic unit of the audit report.
     """
+
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     category: VulnerabilityCategory
     severity: Severity
@@ -62,6 +63,7 @@ class ReportOutput(BaseModel):
     The complete structured audit report returned to the caller.
     This is the top-level object the API returns and the PDF is generated from.
     """
+
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     contract_id: uuid.UUID
 
@@ -69,7 +71,7 @@ class ReportOutput(BaseModel):
     resolution_clarity_score: int = Field(ge=0, le=100)
 
     # Score interpretation label
-    score_label: str   # e.g. "High risk", "Moderate", "Well-specified"
+    score_label: str  # e.g. "High risk", "Moderate", "Well-specified"
 
     # All findings, sorted by severity descending
     findings: list[Finding]
@@ -81,7 +83,7 @@ class ReportOutput(BaseModel):
     low_count: int
 
     # The full rewritten contract (all rewrites applied together)
-    rewritten_contract: Optional[str] = None
+    rewritten_contract: str | None = None
 
     # How long the audit took in seconds
     audit_duration_seconds: float

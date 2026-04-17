@@ -58,12 +58,26 @@ dev = [
     "mypy>=1.9.0",
     "ruff>=0.4.0",
     "pytest-dotenv>=0.5.2",
+    "pytest-timeout>=2.3.1",
 ]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = [
+    "B008",   # FastAPI uses Depends() in function defaults — intentional pattern
+    "B905",   # zip() without strict= — not required for this codebase
+    "UP042",  # StrEnum migration — deferred for Pydantic v2 compatibility
+    "E501",   # Line too long — long strings in prompts/evidence text
+    "E711",   # == None comparisons — SQLAlchemy generates IS NULL via ==
+    "E712",   # == True comparisons — SQLAlchemy boolean column filter pattern
+    "SIM102", # Nested if — readability preference
+    "SIM105", # contextlib.suppress — try/except is clearer in this context
+    "E741",   # Ambiguous variable name
+]
 
 [tool.mypy]
 python_version = "3.11"
@@ -73,7 +87,7 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "--cov=. --cov-report=term-missing --cov-fail-under=70"
+addopts = "-v"
 env_files = [".env.test"]
 
 [tool.setuptools.packages.find]

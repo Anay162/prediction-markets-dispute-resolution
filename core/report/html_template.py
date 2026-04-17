@@ -11,22 +11,24 @@ Usage:
     from core.report.html_template import render_report_html
     html = render_report_html(report, brand_name="Kalshi")
 """
+
 from __future__ import annotations
 
 from api.schemas.report import ReportOutput, Severity
 
 # Jinja2 is bundled with FastAPI's dependencies — safe to import
 try:
-    from jinja2 import Environment, BaseLoader
+    from jinja2 import BaseLoader, Environment
+
     _JINJA2_AVAILABLE = True
 except ImportError:
     _JINJA2_AVAILABLE = False
 
 SEVERITY_COLORS = {
     Severity.critical: ("#7f1d1d", "#fecaca"),
-    Severity.high:     ("#78350f", "#fde68a"),
-    Severity.medium:   ("#1e3a5f", "#bfdbfe"),
-    Severity.low:      ("#14532d", "#bbf7d0"),
+    Severity.high: ("#78350f", "#fde68a"),
+    Severity.medium: ("#1e3a5f", "#bfdbfe"),
+    Severity.low: ("#14532d", "#bbf7d0"),
 }
 
 REPORT_TEMPLATE = """

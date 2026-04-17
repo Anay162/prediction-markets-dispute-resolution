@@ -16,13 +16,12 @@ Execution order:
 The pipeline is intentionally not async at the top level — it is
 called from a Celery task which manages its own event loop.
 """
+
 from __future__ import annotations
 
-import asyncio
 import logging
 import time
 import uuid
-from typing import Callable, Awaitable
 
 from api.schemas.contract import ContractInput
 from api.schemas.report import ReportOutput
@@ -48,9 +47,9 @@ class AuditPipeline:
     def __init__(
         self,
         llm_client,
-        db_session_factory,             # Callable that returns an AsyncSession context manager
+        db_session_factory,  # Callable that returns an AsyncSession context manager
         opencorporates_api_key: str | None = None,
-        scoring_weights=None,           # Optional custom ScoringWeight from DB
+        scoring_weights=None,  # Optional custom ScoringWeight from DB
     ):
         self._llm = llm_client
         self._db_factory = db_session_factory
@@ -152,10 +151,7 @@ class AuditPipeline:
             )
 
             await _progress(progress_callback, "Complete", 100)
-            logger.info(
-                f"[{job_id}] Pipeline complete in {elapsed:.1f}s. "
-                f"Report ID: {report.id}"
-            )
+            logger.info(f"[{job_id}] Pipeline complete in {elapsed:.1f}s. Report ID: {report.id}")
             return report
 
 

@@ -8,6 +8,7 @@ keeping the HTTP response fast while processing happens async.
 Also handles recalibration check: after every 50 new outcomes,
 it checks whether the scoring weights should be recalibrated.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -19,7 +20,7 @@ from worker.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
-RECALIBRATION_THRESHOLD = 50   # Trigger recalibration check after this many new outcomes
+RECALIBRATION_THRESHOLD = 50  # Trigger recalibration check after this many new outcomes
 
 
 @celery_app.task(
@@ -43,9 +44,9 @@ def process_outcome(outcome_data: dict) -> dict:
 
 
 async def _process_async(outcome_data: dict) -> dict:
-    from data.database import init_db, get_session
-    from data.repositories.outcome_repo import create_outcome, list_outcomes
+    from data.database import get_session, init_db
     from data.repositories.contract_repo import get_report_by_job
+    from data.repositories.outcome_repo import create_outcome, list_outcomes
 
     init_db(os.environ["DATABASE_URL"])
 
@@ -78,11 +79,9 @@ async def _process_async(outcome_data: dict) -> dict:
 
         if len(all_outcomes) % RECALIBRATION_THRESHOLD == 0 and len(all_outcomes) > 0:
             logger.info(
-                f"Reached {len(all_outcomes)} outcomes — "
-                f"triggering background recalibration check"
+                f"Reached {len(all_outcomes)} outcomes — triggering background recalibration check"
             )
             # Fire-and-forget: the calibration script handles the actual work
-            from worker.tasks.scrape_task import scrape_disputes
             # In a full implementation, this would trigger calibrate_weights.py
             # For now we log the signal
             recalibration_triggered = True

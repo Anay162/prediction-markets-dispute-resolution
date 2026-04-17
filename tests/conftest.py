@@ -11,26 +11,25 @@ Key fixtures:
     db_session        — In-memory SQLite session (unit tests)
     async_client      — httpx AsyncClient pointed at the FastAPI test app
 """
+
 from __future__ import annotations
 
-import json
 import uuid
 from datetime import date, datetime, timedelta
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
 from api.schemas.contract import ContractInput, Platform
 from api.schemas.report import Finding, Severity, VulnerabilityCategory
-from core.parser.entity_extractor import ParsedContract, NamedEntity, Threshold, Timeframe, KeyTerm
-
+from core.parser.entity_extractor import KeyTerm, NamedEntity, ParsedContract, Threshold, Timeframe
 
 # ---------------------------------------------------------------------------
 # Mock LLM client
 # ---------------------------------------------------------------------------
+
 
 class MockLLMClient:
     """
@@ -77,6 +76,7 @@ def make_mock_llm(responses: dict[str, str] | None = None) -> MockLLMClient:
 # Mock enrichment client
 # ---------------------------------------------------------------------------
 
+
 class MockEnrichmentClient:
     """Returns safe empty responses for all enrichment calls."""
 
@@ -110,6 +110,7 @@ class MockEnrichmentClient:
 # ---------------------------------------------------------------------------
 # Contract fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def close_date() -> date:
@@ -202,6 +203,7 @@ def adversarial_contract(close_date) -> ContractInput:
 # Parsed contract fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def parsed_sample_contract(sample_contract) -> ParsedContract:
     """Pre-parsed version of sample_contract for analyzer unit tests."""
@@ -259,6 +261,7 @@ def parsed_sample_contract(sample_contract) -> ParsedContract:
 # ---------------------------------------------------------------------------
 # Finding fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def sample_finding() -> Finding:
@@ -335,6 +338,7 @@ def multi_finding_list(sample_finding) -> list[Finding]:
 # App / HTTP fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def mock_llm() -> MockLLMClient:
     return make_mock_llm()
@@ -351,15 +355,13 @@ async def async_client():
     AsyncClient pointed at the FastAPI app with mocked dependencies.
     DB and Redis are not initialised — routes that need them must mock separately.
     """
-    from api.main import app
     from api.dependencies import require_api_key_with_rate_limit
+    from api.main import app
 
     # Override auth so tests don't need a real API key
     app.dependency_overrides[require_api_key_with_rate_limit] = lambda: "test-key"
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
 
     app.dependency_overrides.clear()

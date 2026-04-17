@@ -4,9 +4,9 @@ api/dependencies.py
 Shared FastAPI dependencies injected into route handlers.
 Centralises auth, database session, and rate limiting logic.
 """
+
 from __future__ import annotations
 
-import hashlib
 import os
 from typing import Annotated
 
@@ -46,6 +46,7 @@ async def require_api_key(
 
     # Production: check the hashed key in the database
     from api.auth.api_keys import verify_api_key
+
     key_record = await verify_api_key(db, api_key)
     if not key_record:
         raise HTTPException(
@@ -62,6 +63,7 @@ async def require_api_key_with_rate_limit(
     Like require_api_key but also checks the per-key rate limit.
     """
     from api.auth.rate_limit import check_rate_limit
+
     allowed = await check_rate_limit(api_key)
     if not allowed:
         raise HTTPException(

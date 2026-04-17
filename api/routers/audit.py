@@ -5,6 +5,7 @@ Audit endpoints:
     POST   /v1/audit                     Submit a contract for audit
     GET    /v1/audit/{job_id}/status     Poll async job status
 """
+
 from __future__ import annotations
 
 import uuid
@@ -22,7 +23,7 @@ from worker.tasks.audit_task import run_audit
 router = APIRouter()
 
 # Contracts smaller than this char count can be run synchronously
-SYNC_CHAR_LIMIT = int(2000)
+SYNC_CHAR_LIMIT = 2000
 
 
 @router.post("/audit", response_model=AuditResponse, status_code=202)
@@ -54,7 +55,7 @@ async def submit_audit(
                 job_id=job_id,
             )
         except Exception as exc:
-            raise HTTPException(status_code=500, detail=str(exc))
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
 
         return AuditResponse(
             job_id=job_id,
@@ -66,13 +67,16 @@ async def submit_audit(
 
     # Initialise job status in Redis before queuing so the status
     # endpoint returns something meaningful immediately
-    await job_set_status(str(job_id), {
-        "job_id": str(job_id),
-        "status": "pending",
-        "progress_pct": 0,
-        "current_stage": "Queued",
-        "updated_at": datetime.utcnow().isoformat(),
-    })
+    await job_set_status(
+        str(job_id),
+        {
+            "job_id": str(job_id),
+            "status": "pending",
+            "progress_pct": 0,
+            "current_stage": "Queued",
+            "updated_at": datetime.utcnow().isoformat(),
+        },
+    )
 
     run_audit.apply_async(
         kwargs={
@@ -83,7 +87,7 @@ async def submit_audit(
         queue="audits",
     )
 
-    estimated_seconds = max(15, total_chars // 100)   # Rough estimate
+    estimated_seconds = max(15, total_chars // 100)  # Rough estimate
 
     return AuditResponse(
         job_id=job_id,
@@ -133,21 +137,23 @@ async def get_audit_status(
 
 def _orm_report_to_schema(record):
     """Convert a Report ORM object to a ReportOutput Pydantic model."""
-    from api.schemas.report import ReportOutput, Finding, Severity, VulnerabilityCategory
+    from api.schemas.report import Finding, ReportOutput, Severity, VulnerabilityCategory
 
     findings = []
-    for fr in (record.findings or []):
-        findings.append(Finding(
-            id=fr.id,
-            category=VulnerabilityCategory(fr.category),
-            severity=Severity(fr.severity),
-            description=fr.description,
-            affected_clause=fr.affected_clause,
-            rewrite=fr.rewrite,
-            diff=fr.diff or [],
-            evidence=fr.evidence or [],
-            confidence=fr.confidence,
-        ))
+    for fr in record.findings or []:
+        findings.append(
+            Finding(
+                id=fr.id,
+                category=VulnerabilityCategory(fr.category),
+                severity=Severity(fr.severity),
+                description=fr.description,
+                affected_clause=fr.affected_clause,
+                rewrite=fr.rewrite,
+                diff=fr.diff or [],
+                evidence=fr.evidence or [],
+                confidence=fr.confidence,
+            )
+        )
 
     return ReportOutput(
         id=record.id,

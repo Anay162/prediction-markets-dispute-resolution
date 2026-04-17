@@ -4,6 +4,7 @@ data/scrapers/manifold_resolutions.py
 Scrapes Manifold Markets for resolved markets with N/A or ambiguous resolutions.
 Manifold's API is fully public.
 """
+
 from __future__ import annotations
 
 import logging

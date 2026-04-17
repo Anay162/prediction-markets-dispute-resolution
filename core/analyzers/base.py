@@ -13,6 +13,7 @@ Design principles:
 - The LLM call, retry logic, and output parsing are all handled here
   in the base class so individual analyzers stay focused on their domain.
 """
+
 from __future__ import annotations
 
 import dataclasses
@@ -20,10 +21,10 @@ import json
 import logging
 import re
 import uuid
-from abc import ABC, abstractmethod
+from abc import ABC
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from api.schemas.report import Finding, Severity, VulnerabilityCategory
 from core.parser.entity_extractor import ParsedContract
@@ -47,6 +48,7 @@ def _dc_list(items: list) -> list[dict]:
 
 class AnalyzerError(Exception):
     """Raised when an analyzer fails to produce usable output."""
+
     pass
 
 
@@ -89,7 +91,7 @@ class BaseAnalyzer(ABC):
             raw_response = await self.llm.complete(
                 system=self._load_prompt_template(),
                 user=prompt,
-                temperature=0.2,       # Low temperature for consistent structured output
+                temperature=0.2,  # Low temperature for consistent structured output
                 max_tokens=4096,
             )
             findings = self._parse_llm_output(raw_response, contract)
@@ -115,8 +117,7 @@ class BaseAnalyzer(ABC):
             path = PROMPTS_DIR / self.prompt_file
             if not path.exists():
                 raise AnalyzerError(
-                    f"Prompt file not found: {path}. "
-                    f"Expected at core/prompts/{self.prompt_file}"
+                    f"Prompt file not found: {path}. Expected at core/prompts/{self.prompt_file}"
                 )
             self._prompt_template = path.read_text(encoding="utf-8")
         return self._prompt_template
@@ -162,9 +163,7 @@ class BaseAnalyzer(ABC):
     # LLM output parsing
     # ------------------------------------------------------------------
 
-    def _parse_llm_output(
-        self, raw: str, contract: ParsedContract
-    ) -> list[Finding]:
+    def _parse_llm_output(self, raw: str, contract: ParsedContract) -> list[Finding]:
         """
         Parse the LLM's JSON output into a list of Finding objects.
 
@@ -179,7 +178,7 @@ class BaseAnalyzer(ABC):
             raise AnalyzerError(
                 f"Could not parse JSON from {self.__class__.__name__} output. "
                 f"Raw (first 500 chars): {raw[:500]!r}. Error: {e}"
-            )
+            ) from e
 
         if not isinstance(data, list):
             # Some models wrap in {"findings": [...]}
@@ -197,8 +196,7 @@ class BaseAnalyzer(ABC):
                 findings.append(finding)
             except Exception as e:
                 logger.warning(
-                    f"{self.__class__.__name__}: skipping malformed finding #{i}: {e}. "
-                    f"Item: {item}"
+                    f"{self.__class__.__name__}: skipping malformed finding #{i}: {e}. Item: {item}"
                 )
                 continue
 
@@ -223,7 +221,7 @@ class BaseAnalyzer(ABC):
             rewrite=str(item.get("rewrite", "")).strip(),
             evidence=item.get("evidence", []),
             confidence=float(item.get("confidence", 1.0)),
-            diff=[],    # diff is generated later by rewriter/diff_generator.py
+            diff=[],  # diff is generated later by rewriter/diff_generator.py
         )
 
     @staticmethod

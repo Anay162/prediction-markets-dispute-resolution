@@ -8,6 +8,7 @@ Two LLM calls per finding:
   1. clause_rewriter.txt  → produces the improved clause
   2. rewrite_validator.txt → self-critique to catch new issues introduced
 """
+
 from __future__ import annotations
 
 import json
@@ -20,7 +21,7 @@ from api.schemas.report import Finding
 logger = logging.getLogger(__name__)
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
-MAX_REWRITE_ATTEMPTS = 2    # If validator rejects, try once more
+MAX_REWRITE_ATTEMPTS = 2  # If validator rejects, try once more
 
 
 class ClauseRewriter:
@@ -54,13 +55,13 @@ class ClauseRewriter:
             if validation.get("approved") and validation.get("quality_score", 0) >= 3:
                 finding.rewrite = rewrite_result.get("rewritten_clause", finding.rewrite)
                 logger.debug(
-                    f"Rewrite approved (attempt {attempt+1}, "
+                    f"Rewrite approved (attempt {attempt + 1}, "
                     f"score {validation['quality_score']}): {finding.category}"
                 )
                 break
             else:
                 logger.debug(
-                    f"Rewrite rejected (attempt {attempt+1}): "
+                    f"Rewrite rejected (attempt {attempt + 1}): "
                     f"{validation.get('closure_explanation', 'no reason given')}"
                 )
                 # On retry, inject the validator's feedback into the next rewrite call
@@ -92,9 +93,7 @@ class ClauseRewriter:
     # LLM calls
     # ------------------------------------------------------------------
 
-    async def _call_rewriter(
-        self, finding: Finding, full_contract_text: str
-    ) -> dict | None:
+    async def _call_rewriter(self, finding: Finding, full_contract_text: str) -> dict | None:
         system = self._load_prompt("clause_rewriter.txt")
         feedback_note = ""
         if hasattr(finding, "_validator_feedback") and finding._validator_feedback:
@@ -122,16 +121,13 @@ class ClauseRewriter:
             logger.warning(f"Rewriter LLM call failed: {e}")
             return None
 
-    async def _call_validator(
-        self, finding: Finding, rewrite_result: dict
-    ) -> dict:
+    async def _call_validator(self, finding: Finding, rewrite_result: dict) -> dict:
         system = self._load_prompt("rewrite_validator.txt")
         user = (
             f"ORIGINAL CLAUSE:\n{finding.affected_clause}\n\n"
             f"VULNERABILITY DESCRIPTION:\n{finding.description}\n\n"
             f"PROPOSED REWRITE:\n{rewrite_result.get('rewritten_clause', '')}\n\n"
-            f"CHANGES MADE:\n"
-            + "\n".join(f"- {c}" for c in rewrite_result.get("changes_made", []))
+            f"CHANGES MADE:\n" + "\n".join(f"- {c}" for c in rewrite_result.get("changes_made", []))
         )
 
         try:
@@ -160,7 +156,7 @@ class ClauseRewriter:
         clean = raw.strip()
         for fence in ("```json", "```"):
             if clean.startswith(fence):
-                clean = clean[len(fence):]
+                clean = clean[len(fence) :]
                 break
         if clean.endswith("```"):
             clean = clean[:-3]

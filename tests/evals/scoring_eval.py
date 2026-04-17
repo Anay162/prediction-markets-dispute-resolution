@@ -15,6 +15,7 @@ Usage:
     python -m tests.evals.scoring_eval
     python -m tests.evals.scoring_eval --min-outcomes 20
 """
+
 from __future__ import annotations
 
 import argparse
@@ -26,12 +27,12 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 # Score thresholds for classification
-SAFE_THRESHOLD = 70      # Score >= this → predict "resolves cleanly"
-RISKY_THRESHOLD = 50     # Score <= this → predict "dispute risk"
+SAFE_THRESHOLD = 70  # Score >= this → predict "resolves cleanly"
+RISKY_THRESHOLD = 50  # Score <= this → predict "dispute risk"
 
 
 async def main(min_outcomes: int) -> dict:
-    from data.database import init_db, get_session
+    from data.database import get_session, init_db
     from data.repositories.outcome_repo import get_calibration_dataset
 
     init_db(os.environ["DATABASE_URL"])
@@ -49,11 +50,11 @@ async def main(min_outcomes: int) -> dict:
     logger.info(f"Evaluating scoring accuracy on {len(dataset)} outcomes")
 
     # Classification buckets
-    true_positives = 0   # Predicted safe, was safe
-    true_negatives = 0   # Predicted risky, was disputed
+    true_positives = 0  # Predicted safe, was safe
+    true_negatives = 0  # Predicted risky, was disputed
     false_positives = 0  # Predicted safe, was disputed (dangerous misses)
     false_negatives = 0  # Predicted risky, was safe (over-conservative)
-    ambiguous = 0        # Score in middle zone (50-70) — we don't classify these
+    ambiguous = 0  # Score in middle zone (50-70) — we don't classify these
 
     score_by_outcome: dict[str, list[int]] = {"clean": [], "disputed": []}
 
@@ -82,10 +83,19 @@ async def main(min_outcomes: int) -> dict:
     total_classified = true_positives + true_negatives + false_positives + false_negatives
     accuracy = (true_positives + true_negatives) / total_classified if total_classified > 0 else 0
 
-    fnr = false_positives / (false_positives + true_negatives) if (false_positives + true_negatives) > 0 else 0
-    fpr = false_negatives / (false_negatives + true_positives) if (false_negatives + true_positives) > 0 else 0
+    fnr = (
+        false_positives / (false_positives + true_negatives)
+        if (false_positives + true_negatives) > 0
+        else 0
+    )
+    fpr = (
+        false_negatives / (false_negatives + true_positives)
+        if (false_negatives + true_positives) > 0
+        else 0
+    )
 
-    def avg(lst): return sum(lst) / len(lst) if lst else 0
+    def avg(lst):
+        return sum(lst) / len(lst) if lst else 0
 
     results = {
         "total_outcomes": len(dataset),
@@ -103,7 +113,7 @@ async def main(min_outcomes: int) -> dict:
     }
 
     logger.info(
-        f"\n{'='*55}\n"
+        f"\n{'=' * 55}\n"
         f"SCORING EVAL RESULTS ({len(dataset)} outcomes)\n"
         f"  Accuracy:             {accuracy:.1%}\n"
         f"  False negative rate:  {fnr:.1%}  (disputed but scored safe — dangerous)\n"
@@ -111,7 +121,7 @@ async def main(min_outcomes: int) -> dict:
         f"  Ambiguous zone:       {ambiguous} outcomes in score range 50–70\n"
         f"  Avg score (clean):    {results['avg_score_clean_contracts']}\n"
         f"  Avg score (disputed): {results['avg_score_disputed_contracts']}\n"
-        f"{'='*55}"
+        f"{'=' * 55}"
     )
 
     if fnr > 0.15:
@@ -126,8 +136,10 @@ async def main(min_outcomes: int) -> dict:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate RCS scoring accuracy")
     parser.add_argument(
-        "--min-outcomes", type=int, default=10,
-        help="Minimum labeled outcomes required to run eval (default: 10)"
+        "--min-outcomes",
+        type=int,
+        default=10,
+        help="Minimum labeled outcomes required to run eval (default: 10)",
     )
     args = parser.parse_args()
     asyncio.run(main(min_outcomes=args.min_outcomes))

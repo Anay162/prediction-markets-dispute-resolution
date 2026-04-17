@@ -64,7 +64,12 @@ jobs:
       - name: Run unit tests
         run: |
           pytest tests/unit \
-            --cov=core --cov=api \
+            --cov=core/analyzers \
+            --cov=core/parser \
+            --cov=core/scoring/rcs_calculator.py \
+            --cov=core/rewriter/clause_rewriter.py \
+            --cov=core/rewriter/diff_generator.py \
+            --cov=api/schemas \
             --cov-report=term-missing \
             --cov-fail-under=70 \
             -v

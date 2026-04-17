@@ -10,13 +10,13 @@ Responsibilities:
 - Enforces a hard max_tokens ceiling per environment
 - Returns raw string content; callers handle parsing
 """
+
 from __future__ import annotations
 
 import asyncio
 import logging
 import time
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 import anthropic
 import openai
@@ -35,11 +35,12 @@ OPENAI_EMBEDDING = "text-embedding-3-small"
 @dataclass
 class LLMUsage:
     """Token usage for a single LLM call."""
+
     model: str
     input_tokens: int
     output_tokens: int
     duration_seconds: float
-    call_type: str = "completion"   # "completion" | "embedding"
+    call_type: str = "completion"  # "completion" | "embedding"
 
     @property
     def total_tokens(self) -> int:
@@ -49,7 +50,7 @@ class LLMUsage:
     def estimated_cost_usd(self) -> float:
         """Rough cost estimate. Update pricing as models change."""
         pricing = {
-            "claude-sonnet-4-20250514": (0.000003, 0.000015),   # (input/tok, output/tok)
+            "claude-sonnet-4-20250514": (0.000003, 0.000015),  # (input/tok, output/tok)
             "gpt-4o": (0.000005, 0.000015),
             "text-embedding-3-small": (0.00000002, 0.0),
         }
@@ -71,7 +72,7 @@ class LLMClient:
         fallback_model: str = OPENAI_FALLBACK,
         embedding_model: str = OPENAI_EMBEDDING,
         max_retries: int = 3,
-        usage_callback=None,   # Optional async callable(LLMUsage) for logging
+        usage_callback=None,  # Optional async callable(LLMUsage) for logging
     ):
         self._anthropic = anthropic.AsyncAnthropic(api_key=anthropic_api_key)
         self._openai = openai.AsyncOpenAI(api_key=openai_api_key)
@@ -104,9 +105,7 @@ class LLMClient:
             try:
                 return await self._complete_anthropic(system, user, temperature, max_tokens)
             except Exception as e:
-                logger.warning(
-                    f"Anthropic failed after retries ({e}), falling back to OpenAI"
-                )
+                logger.warning(f"Anthropic failed after retries ({e}), falling back to OpenAI")
 
         return await self._complete_openai(system, user, temperature, max_tokens)
 
@@ -167,22 +166,26 @@ class LLMClient:
 
             except anthropic.RateLimitError as e:
                 wait = _backoff(attempt)
-                logger.warning(f"Anthropic rate limit (attempt {attempt+1}), waiting {wait}s")
+                logger.warning(f"Anthropic rate limit (attempt {attempt + 1}), waiting {wait}s")
                 await asyncio.sleep(wait)
                 last_exc = e
 
             except anthropic.APIStatusError as e:
                 if e.status_code >= 500:
                     wait = _backoff(attempt)
-                    logger.warning(f"Anthropic server error {e.status_code} (attempt {attempt+1}), waiting {wait}s")
+                    logger.warning(
+                        f"Anthropic server error {e.status_code} (attempt {attempt + 1}), waiting {wait}s"
+                    )
                     await asyncio.sleep(wait)
                     last_exc = e
                 else:
-                    raise   # 4xx errors are not retried
+                    raise  # 4xx errors are not retried
 
             except anthropic.APIConnectionError as e:
                 wait = _backoff(attempt)
-                logger.warning(f"Anthropic connection error (attempt {attempt+1}), waiting {wait}s")
+                logger.warning(
+                    f"Anthropic connection error (attempt {attempt + 1}), waiting {wait}s"
+                )
                 await asyncio.sleep(wait)
                 last_exc = e
 
@@ -225,7 +228,7 @@ class LLMClient:
 
             except openai.RateLimitError as e:
                 wait = _backoff(attempt)
-                logger.warning(f"OpenAI rate limit (attempt {attempt+1}), waiting {wait}s")
+                logger.warning(f"OpenAI rate limit (attempt {attempt + 1}), waiting {wait}s")
                 await asyncio.sleep(wait)
                 last_exc = e
 
@@ -264,4 +267,4 @@ class LLMClient:
 
 def _backoff(attempt: int, base: float = 1.0, cap: float = 30.0) -> float:
     """Exponential backoff: 1s, 2s, 4s, capped at 30s."""
-    return min(base * (2 ** attempt), cap)
+    return min(base * (2**attempt), cap)

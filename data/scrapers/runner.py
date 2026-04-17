@@ -6,6 +6,7 @@ disputes table, deduplicating by external_id.
 
 Called nightly by the Celery beat schedule.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -13,14 +14,13 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.models.dispute import DisputeRecord
+from data.scrapers.manifold_resolutions import scrape_manifold_resolutions
 from data.scrapers.polymarket_disputes import scrape_polymarket_disputes
 from data.scrapers.uma_disputes import scrape_uma_disputes
-from data.scrapers.manifold_resolutions import scrape_manifold_resolutions
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +36,7 @@ async def run_all_scrapers(db: AsyncSession) -> dict[str, int]:
     uma_task = asyncio.create_task(scrape_uma_disputes(limit=300))
     manifold_task = asyncio.create_task(scrape_manifold_resolutions(limit=500))
 
-    results = await asyncio.gather(
-        poly_task, uma_task, manifold_task, return_exceptions=True
-    )
+    results = await asyncio.gather(poly_task, uma_task, manifold_task, return_exceptions=True)
 
     counts: dict[str, int] = {}
     all_records: list[dict] = []
@@ -54,11 +52,7 @@ async def run_all_scrapers(db: AsyncSession) -> dict[str, int]:
 
     if all_records:
         upserted = await _upsert_disputes(db, all_records)
-        logger.info(
-            f"Dispute scrape complete. "
-            f"Total upserted: {upserted}. "
-            f"By platform: {counts}"
-        )
+        logger.info(f"Dispute scrape complete. Total upserted: {upserted}. By platform: {counts}")
 
     return counts
 

@@ -6,11 +6,12 @@ Wayback Machine CDX API for archival history.
 
 Used by SourceFailureAnalyzer._post_process_findings().
 """
+
 from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -43,7 +44,7 @@ async def probe_source(url: str) -> dict[str, Any]:
         "wayback_available": False,
         "wayback_snapshot_count": 0,
         "wayback_last_snapshot": None,
-        "probed_at": datetime.now(timezone.utc).isoformat(),
+        "probed_at": datetime.now(UTC).isoformat(),
     }
 
     # Run HTTP probe and Wayback check concurrently
@@ -100,13 +101,17 @@ async def _wayback_check(url: str) -> dict[str, Any]:
         "fl": "timestamp,statuscode",
         "limit": "100",
         "filter": "statuscode:200",
-        "collapse": "timestamp:6",   # Collapse by month to avoid huge responses
+        "collapse": "timestamp:6",  # Collapse by month to avoid huge responses
     }
     async with httpx.AsyncClient(timeout=WAYBACK_TIMEOUT_SECONDS) as client:
         response = await client.get(WAYBACK_CDX_URL, params=params)
 
     if response.status_code != 200:
-        return {"wayback_available": False, "wayback_snapshot_count": 0, "wayback_last_snapshot": None}
+        return {
+            "wayback_available": False,
+            "wayback_snapshot_count": 0,
+            "wayback_last_snapshot": None,
+        }
 
     rows = response.json()
     # First row is the header ["timestamp", "statuscode"]

@@ -8,9 +8,9 @@ Responsibilities:
 - Normalises uncaught exceptions into consistent JSON error shapes
 - Attaches a unique request ID to every request for log correlation
 """
+
 from __future__ import annotations
 
-import logging
 import time
 import uuid
 
@@ -92,6 +92,7 @@ class ErrorNormalisationMiddleware(BaseHTTPMiddleware):
                 exc_info=True,
             )
             from fastapi.responses import JSONResponse
+
             return JSONResponse(
                 status_code=500,
                 content={

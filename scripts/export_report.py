@@ -8,6 +8,7 @@ Usage:
     python -m scripts.export_report --report-id <uuid>        # outputs to ./report-<id>.pdf
     python -m scripts.export_report --job-id <uuid>           # look up by job ID instead
 """
+
 from __future__ import annotations
 
 import argparse
@@ -27,10 +28,10 @@ async def main(
     job_id: uuid.UUID | None,
     output_path: Path,
 ) -> None:
-    from data.database import init_db, get_session
-    from data.repositories.contract_repo import get_report, get_report_by_job
-    from api.schemas.report import ReportOutput, Finding, Severity, VulnerabilityCategory
+    from api.schemas.report import Finding, ReportOutput, Severity, VulnerabilityCategory
     from core.report.pdf_renderer import render_pdf
+    from data.database import get_session, init_db
+    from data.repositories.contract_repo import get_report, get_report_by_job
 
     init_db(os.environ["DATABASE_URL"])
 
@@ -95,16 +96,17 @@ if __name__ == "__main__":
     group.add_argument("--report-id", type=uuid.UUID, help="Report UUID")
     group.add_argument("--job-id", type=uuid.UUID, help="Job UUID (looks up its report)")
     parser.add_argument(
-        "--output", type=Path, default=None,
-        help="Output path (default: ./report-<id>.pdf)"
+        "--output", type=Path, default=None, help="Output path (default: ./report-<id>.pdf)"
     )
     args = parser.parse_args()
 
     target_id = args.report_id or args.job_id
     output = args.output or Path(f"report-{target_id}.pdf")
 
-    asyncio.run(main(
-        report_id=args.report_id,
-        job_id=args.job_id,
-        output_path=output,
-    ))
+    asyncio.run(
+        main(
+            report_id=args.report_id,
+            job_id=args.job_id,
+            output_path=output,
+        )
+    )

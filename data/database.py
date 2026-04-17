@@ -5,11 +5,12 @@ Async SQLAlchemy engine and session factory.
 Provides the get_db FastAPI dependency and the session_factory
 context manager used by the pipeline and Celery tasks.
 """
+
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -37,7 +38,7 @@ def init_db(database_url: str, pool_size: int = 10, max_overflow: int = 20) -> N
         database_url,
         pool_size=pool_size,
         max_overflow=max_overflow,
-        pool_pre_ping=True,     # Recycle dead connections
+        pool_pre_ping=True,  # Recycle dead connections
         echo=False,
     )
     _session_factory = async_sessionmaker(
@@ -64,6 +65,7 @@ async def drop_tables() -> None:
 # Session dependency for FastAPI
 # ------------------------------------------------------------------
 
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     FastAPI dependency. Yields a session and commits/rolls back on exit.
@@ -87,6 +89,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 # ------------------------------------------------------------------
 # Context manager for Celery tasks and pipeline
 # ------------------------------------------------------------------
+
 
 @asynccontextmanager
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

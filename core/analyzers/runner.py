@@ -7,21 +7,22 @@ Handles:
 - Result merging and deduplication
 - Progress reporting via callback for the async job status endpoint
 """
+
 from __future__ import annotations
 
 import asyncio
 import logging
 import time
-from typing import Callable, Awaitable
+from collections.abc import Awaitable, Callable
 
 from api.schemas.report import Finding, Severity
-from core.analyzers.base import AnalyzerError
-from core.analyzers.source_failure import SourceFailureAnalyzer
-from core.analyzers.definitional_ambiguity import DefinitionalAmbiguityAnalyzer
-from core.analyzers.threshold_gaming import ThresholdGamingAnalyzer
-from core.analyzers.scope_creep import ScopeCreepAnalyzer
-from core.analyzers.timing_ambiguity import TimingAmbiguityAnalyzer
 from core.analyzers.adversarial_resolution import AdversarialResolutionAnalyzer
+from core.analyzers.base import AnalyzerError
+from core.analyzers.definitional_ambiguity import DefinitionalAmbiguityAnalyzer
+from core.analyzers.scope_creep import ScopeCreepAnalyzer
+from core.analyzers.source_failure import SourceFailureAnalyzer
+from core.analyzers.threshold_gaming import ThresholdGamingAnalyzer
+from core.analyzers.timing_ambiguity import TimingAmbiguityAnalyzer
 from core.parser.entity_extractor import ParsedContract
 
 logger = logging.getLogger(__name__)
@@ -125,7 +126,7 @@ class AnalyzerRunner:
                 await progress_callback(f"Completed {name}", len(findings))
             return findings, None
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             msg = f"{name} timed out after {timeout}s"
             logger.warning(msg)
             return [], msg

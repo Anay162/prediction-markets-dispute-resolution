@@ -7,14 +7,14 @@ Checks whether the subject entity could change its nature
 Post-processing: queries OpenCorporates and SEC EDGAR for any
 known corporate actions on the named entities.
 """
+
 from __future__ import annotations
 
 import logging
 
-from api.schemas.report import VulnerabilityCategory
+from api.schemas.report import Finding, VulnerabilityCategory
 from core.analyzers.base import BaseAnalyzer
 from core.parser.entity_extractor import ParsedContract
-from api.schemas.report import Finding
 
 logger = logging.getLogger(__name__)
 

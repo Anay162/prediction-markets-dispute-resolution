@@ -6,6 +6,7 @@ Turns a raw ContractInput into a ParsedContract by:
 
 The ParsedContract is then passed to all six analyzers in parallel.
 """
+
 from __future__ import annotations
 
 import json
@@ -29,10 +30,11 @@ URL_PATTERN = re.compile(r"https?://[^\s\"'<>]+", re.IGNORECASE)
 # Dataclasses
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class NamedEntity:
     text: str
-    entity_type: str        # ORG | PERSON | GPE | LAW | PRODUCT | EVENT | DATE
+    entity_type: str  # ORG | PERSON | GPE | LAW | PRODUCT | EVENT | DATE
     context: str
     ambiguity_risk: bool = False
 
@@ -59,7 +61,7 @@ class Timeframe:
 class KeyTerm:
     term: str
     context: str
-    ambiguity_type: str     # undefined | jurisdiction_dependent | multiple_meanings
+    ambiguity_type: str  # undefined | jurisdiction_dependent | multiple_meanings
     note: str
 
 
@@ -129,6 +131,7 @@ class ParsedContract:
 # Parser class
 # ---------------------------------------------------------------------------
 
+
 class EntityExtractor:
     """
     Parses a raw ContractInput into a ParsedContract using an LLM call
@@ -177,7 +180,7 @@ class EntityExtractor:
         clean = raw.strip()
         for fence in ("```json", "```"):
             if clean.startswith(fence):
-                clean = clean[len(fence):]
+                clean = clean[len(fence) :]
                 break
         if clean.endswith("```"):
             clean = clean[:-3]
@@ -201,12 +204,14 @@ class EntityExtractor:
 
         for item in extracted.get("named_entities", []):
             try:
-                parsed.named_entities.append(NamedEntity(
-                    text=str(item.get("text", "")),
-                    entity_type=str(item.get("entity_type", "ORG")),
-                    context=str(item.get("context", "")),
-                    ambiguity_risk=bool(item.get("ambiguity_risk", False)),
-                ))
+                parsed.named_entities.append(
+                    NamedEntity(
+                        text=str(item.get("text", "")),
+                        entity_type=str(item.get("entity_type", "ORG")),
+                        context=str(item.get("context", "")),
+                        ambiguity_risk=bool(item.get("ambiguity_risk", False)),
+                    )
+                )
             except Exception as e:
                 logger.debug(f"Skipping malformed entity: {item} — {e}")
 
@@ -214,14 +219,16 @@ class EntityExtractor:
             try:
                 raw_val = item.get("value")
                 value = float(raw_val) if raw_val is not None else None
-                parsed.thresholds.append(Threshold(
-                    raw_text=str(item.get("raw_text", "")),
-                    value=value,
-                    unit=str(item.get("unit", "")),
-                    data_series=str(item.get("data_series", "")),
-                    revision_risk=bool(item.get("revision_risk", False)),
-                    single_point_risk=bool(item.get("single_point_risk", False)),
-                ))
+                parsed.thresholds.append(
+                    Threshold(
+                        raw_text=str(item.get("raw_text", "")),
+                        value=value,
+                        unit=str(item.get("unit", "")),
+                        data_series=str(item.get("data_series", "")),
+                        revision_risk=bool(item.get("revision_risk", False)),
+                        single_point_risk=bool(item.get("single_point_risk", False)),
+                    )
+                )
             except Exception as e:
                 logger.debug(f"Skipping malformed threshold: {item} — {e}")
 
@@ -234,23 +241,27 @@ class EntityExtractor:
                         parsed_date = datetime.strptime(str(raw_date), "%Y-%m-%d").date()
                     except ValueError:
                         pass
-                parsed.timeframes.append(Timeframe(
-                    raw_text=str(item.get("raw_text", "")),
-                    parsed_date=parsed_date,
-                    timezone_specified=bool(item.get("timezone_specified", False)),
-                    ambiguity_note=str(item.get("ambiguity_note", "")),
-                ))
+                parsed.timeframes.append(
+                    Timeframe(
+                        raw_text=str(item.get("raw_text", "")),
+                        parsed_date=parsed_date,
+                        timezone_specified=bool(item.get("timezone_specified", False)),
+                        ambiguity_note=str(item.get("ambiguity_note", "")),
+                    )
+                )
             except Exception as e:
                 logger.debug(f"Skipping malformed timeframe: {item} — {e}")
 
         for item in extracted.get("key_terms", []):
             try:
-                parsed.key_terms.append(KeyTerm(
-                    term=str(item.get("term", "")),
-                    context=str(item.get("context", "")),
-                    ambiguity_type=str(item.get("ambiguity_type", "undefined")),
-                    note=str(item.get("note", "")),
-                ))
+                parsed.key_terms.append(
+                    KeyTerm(
+                        term=str(item.get("term", "")),
+                        context=str(item.get("context", "")),
+                        ambiguity_type=str(item.get("ambiguity_type", "undefined")),
+                        note=str(item.get("note", "")),
+                    )
+                )
             except Exception as e:
                 logger.debug(f"Skipping malformed key term: {item} — {e}")
 
@@ -259,7 +270,9 @@ class EntityExtractor:
     def _deterministic_postprocess(
         self, parsed: ParsedContract, contract: ContractInput
     ) -> ParsedContract:
-        full_text = f"{contract.question} {contract.resolution_criteria} {contract.resolution_source}"
+        full_text = (
+            f"{contract.question} {contract.resolution_criteria} {contract.resolution_source}"
+        )
 
         # Extract URL if LLM missed it
         if not parsed.source_url:
@@ -279,16 +292,17 @@ class EntityExtractor:
             for match in re.finditer(pattern, full_text, re.IGNORECASE):
                 matched_text = match.group(0)
                 already_covered = any(
-                    matched_text.lower() in tf.raw_text.lower()
-                    for tf in parsed.timeframes
+                    matched_text.lower() in tf.raw_text.lower() for tf in parsed.timeframes
                 )
                 if not already_covered:
-                    parsed.timeframes.append(Timeframe(
-                        raw_text=matched_text,
-                        parsed_date=None,
-                        timezone_specified=False,
-                        ambiguity_note=f"Deadline language '{matched_text}' has no timezone specified",
-                    ))
+                    parsed.timeframes.append(
+                        Timeframe(
+                            raw_text=matched_text,
+                            parsed_date=None,
+                            timezone_specified=False,
+                            ambiguity_note=f"Deadline language '{matched_text}' has no timezone specified",
+                        )
+                    )
 
         # Flag high-risk key terms not already extracted
         HIGH_RISK_TERMS = {
@@ -308,12 +322,14 @@ class EntityExtractor:
         for term, note in HIGH_RISK_TERMS.items():
             if term.lower() in full_text.lower() and term.lower() not in existing_terms:
                 context = _extract_sentence_containing(full_text, term)
-                parsed.key_terms.append(KeyTerm(
-                    term=term,
-                    context=context,
-                    ambiguity_type="multiple_meanings",
-                    note=note,
-                ))
+                parsed.key_terms.append(
+                    KeyTerm(
+                        term=term,
+                        context=context,
+                        ambiguity_type="multiple_meanings",
+                        note=note,
+                    )
+                )
 
         return parsed
 

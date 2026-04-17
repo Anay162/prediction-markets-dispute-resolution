@@ -6,6 +6,7 @@ Renders a ReportOutput to a PDF binary using WeasyPrint + Jinja2.
 The HTML template is inline here for portability — no external
 template files to manage. The PDF is returned as bytes.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -15,10 +16,10 @@ from api.schemas.report import ReportOutput, Severity
 
 # Colour map for severity badges in the PDF
 SEVERITY_COLORS = {
-    Severity.critical: ("#7f1d1d", "#fecaca"),   # (text, bg)
-    Severity.high:     ("#78350f", "#fde68a"),
-    Severity.medium:   ("#1e3a5f", "#bfdbfe"),
-    Severity.low:      ("#14532d", "#bbf7d0"),
+    Severity.critical: ("#7f1d1d", "#fecaca"),  # (text, bg)
+    Severity.high: ("#78350f", "#fde68a"),
+    Severity.medium: ("#1e3a5f", "#bfdbfe"),
+    Severity.low: ("#14532d", "#bbf7d0"),
 }
 
 HTML_TEMPLATE = """
@@ -119,7 +120,7 @@ def _build_html(report: ReportOutput) -> str:
         txt_color, bg_color = SEVERITY_COLORS[f.severity]
         badge = (
             f'<span class="badge" style="background:{bg_color};color:{txt_color}">'
-            f'{f.severity.value.upper()}</span>'
+            f"{f.severity.value.upper()}</span>"
         )
         cat = f.category.value.replace("_", " ").title()
         evidence_html = ""
@@ -166,4 +167,5 @@ def _build_html(report: ReportOutput) -> str:
 
 def _weasyprint_render(html: str) -> bytes:
     from weasyprint import HTML
+
     return HTML(string=html).write_pdf()

@@ -8,6 +8,7 @@ This module sits between the raw SQL in dispute_lookup.py and
 the higher-level enrichment client, providing typed interfaces
 and connection management.
 """
+
 from __future__ import annotations
 
 import logging

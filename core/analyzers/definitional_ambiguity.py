@@ -4,6 +4,7 @@ Category 2: Definitional Ambiguity Analyzer
 Checks whether key terms in the contract are defined precisely enough
 to produce a mechanical yes/no resolution answer.
 """
+
 from __future__ import annotations
 
 import logging

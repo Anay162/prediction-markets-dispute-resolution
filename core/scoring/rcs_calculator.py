@@ -22,6 +22,7 @@ The score is also capped by the presence of CRITICAL findings:
     Any critical finding caps the score at 50.
     Two or more critical findings cap the score at 25.
 """
+
 from __future__ import annotations
 
 import logging
@@ -54,8 +55,9 @@ DEFAULT_CATEGORY_MULTIPLIERS = {
 @dataclass
 class ScoreBreakdown:
     """Detailed breakdown of how the RCS was calculated."""
-    raw_score: float        # Before floor/ceiling
-    final_score: int        # After floor (0) and critical caps
+
+    raw_score: float  # Before floor/ceiling
+    final_score: int  # After floor (0) and critical caps
     penalty_by_severity: dict[str, float]
     penalty_by_category: dict[str, float]
     critical_count: int

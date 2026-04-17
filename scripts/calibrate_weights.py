@@ -15,6 +15,7 @@ Usage:
     python -m scripts.calibrate_weights
     python -m scripts.calibrate_weights --dry-run   (print results, don't save)
 """
+
 from __future__ import annotations
 
 import argparse
@@ -29,14 +30,16 @@ logger = logging.getLogger(__name__)
 
 
 async def main(dry_run: bool) -> None:
-    from data.database import init_db, get_session
-    from sqlalchemy import select, text
+    from sqlalchemy import text
+
+    from data.database import get_session, init_db
 
     init_db(os.environ["DATABASE_URL"])
 
     async with get_session() as db:
         # Fetch all outcomes that have a corresponding report with a score
-        rows = await db.execute(text("""
+        rows = await db.execute(
+            text("""
             SELECT
                 o.resolved_cleanly,
                 o.dispute_filed,
@@ -50,7 +53,8 @@ async def main(dry_run: bool) -> None:
             JOIN reports r ON r.id = o.report_id
             WHERE r.resolution_clarity_score IS NOT NULL
               AND (o.resolved_cleanly IS NOT NULL OR o.dispute_filed = true)
-        """))
+        """)
+        )
         outcomes = rows.fetchall()
 
     if not outcomes:
@@ -77,21 +81,28 @@ async def main(dry_run: bool) -> None:
     ):
         correct = 0
         for o in outcomes:
-            predicted_score = max(0, 100 - (
-                o.critical_count * c_pen +
-                o.high_count * h_pen +
-                o.medium_count * m_pen +
-                o.low_count * l_pen
-            ))
+            predicted_score = max(
+                0,
+                100
+                - (
+                    o.critical_count * c_pen
+                    + o.high_count * h_pen
+                    + o.medium_count * m_pen
+                    + o.low_count * l_pen
+                ),
+            )
             # Critical cap
             if o.critical_count >= 2:
                 predicted_score = min(predicted_score, 25)
             elif o.critical_count >= 1:
                 predicted_score = min(predicted_score, 50)
 
-            if o.resolved_cleanly and predicted_score >= 70:
-                correct += 1
-            elif o.dispute_filed and predicted_score < 50:
+            if (
+                o.resolved_cleanly
+                and predicted_score >= 70
+                or o.dispute_filed
+                and predicted_score < 50
+            ):
                 correct += 1
 
         accuracy = correct / len(outcomes)
@@ -113,15 +124,15 @@ async def main(dry_run: bool) -> None:
         return
 
     # Save new weights to DB
+    from sqlalchemy import update
+
     from data.database import get_session
     from data.models.dispute import ScoringWeight
-    from sqlalchemy import update
 
     async with get_session() as db:
         # Deactivate current active weights
         await db.execute(
-            update(ScoringWeight).where(ScoringWeight.is_active == True)
-            .values(is_active=False)
+            update(ScoringWeight).where(ScoringWeight.is_active == True).values(is_active=False)
         )
         version = f"v{datetime.utcnow().strftime('%Y%m%d_%H%M')}"
         new_weights = ScoringWeight(
@@ -144,7 +155,6 @@ async def main(dry_run: bool) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Calibrate RCS scoring weights")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Print results without saving to DB")
+    parser.add_argument("--dry-run", action="store_true", help="Print results without saving to DB")
     args = parser.parse_args()
     asyncio.run(main(dry_run=args.dry_run))

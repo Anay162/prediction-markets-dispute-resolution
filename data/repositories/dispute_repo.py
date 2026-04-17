@@ -5,13 +5,12 @@ Database operations for the historical dispute corpus.
 Provides read access to the disputes table populated by the scrapers,
 and write access for the scraper runner's upsert operations.
 """
+
 from __future__ import annotations
 
 import uuid
-from datetime import date
-from typing import Optional
 
-from sqlalchemy import select, desc, func, text
+from sqlalchemy import desc, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.models.dispute import DisputeRecord
@@ -21,9 +20,7 @@ async def get_dispute(
     db: AsyncSession,
     dispute_id: uuid.UUID,
 ) -> DisputeRecord | None:
-    result = await db.execute(
-        select(DisputeRecord).where(DisputeRecord.id == dispute_id)
-    )
+    result = await db.execute(select(DisputeRecord).where(DisputeRecord.id == dispute_id))
     return result.scalar_one_or_none()
 
 
@@ -31,9 +28,7 @@ async def get_dispute_by_external_id(
     db: AsyncSession,
     external_id: str,
 ) -> DisputeRecord | None:
-    result = await db.execute(
-        select(DisputeRecord).where(DisputeRecord.external_id == external_id)
-    )
+    result = await db.execute(select(DisputeRecord).where(DisputeRecord.external_id == external_id))
     return result.scalar_one_or_none()
 
 
@@ -50,12 +45,7 @@ async def list_disputes(
     List disputes with optional filters.
     Used by the labeling UI and the embedding indexer.
     """
-    q = (
-        select(DisputeRecord)
-        .order_by(desc(DisputeRecord.scraped_at))
-        .limit(limit)
-        .offset(offset)
-    )
+    q = select(DisputeRecord).order_by(desc(DisputeRecord.scraped_at)).limit(limit).offset(offset)
     if platform:
         q = q.where(DisputeRecord.source_platform == platform)
     if failure_category:
@@ -94,7 +84,8 @@ async def get_corpus_stats(db: AsyncSession) -> dict:
     Return aggregate statistics about the dispute corpus.
     Shown in the dashboard and used by report context.
     """
-    result = await db.execute(text("""
+    result = await db.execute(
+        text("""
         SELECT
             COUNT(*)                                          AS total,
             COUNT(DISTINCT source_platform)                  AS platforms,
@@ -104,7 +95,8 @@ async def get_corpus_stats(db: AsyncSession) -> dict:
                        THEN 1 END)                           AS embedded,
             MAX(scraped_at)                                  AS last_scraped
         FROM disputes
-    """))
+    """)
+    )
     row = result.fetchone()
     if not row:
         return {"total": 0, "platforms": 0, "labeled": 0, "embedded": 0, "last_scraped": None}

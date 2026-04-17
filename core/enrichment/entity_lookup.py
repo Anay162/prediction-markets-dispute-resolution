@@ -6,6 +6,7 @@ to surface recent corporate actions, M&A activity, or status changes.
 
 Used by ScopeCreepAnalyzer._post_process_findings().
 """
+
 from __future__ import annotations
 
 import logging
@@ -45,6 +46,7 @@ async def lookup_entity(
 
     # Run OpenCorporates and SEC EDGAR in parallel
     import asyncio
+
     oc_task = asyncio.create_task(_opencorporates_lookup(entity_name, opencorporates_api_key))
     sec_task = asyncio.create_task(_edgar_lookup(entity_name))
 
@@ -59,19 +61,22 @@ async def lookup_entity(
         result["sec_filings"] = sec_result.get("filings", [])
         # Surface M&A signals from SEC filings
         ma_filings = [
-            f for f in result["sec_filings"]
+            f
+            for f in result["sec_filings"]
             if f.get("form") in ("S-4", "DEF14A", "SC 13D", "SC TO-T")
         ]
         if ma_filings:
-            result["recent_corporate_actions"].extend([
-                {
-                    "type": f["form"],
-                    "description": f"SEC filing {f['form']}: {f.get('description', 'M&A-related filing')}",
-                    "source": "SEC EDGAR",
-                    "date": f.get("filed"),
-                }
-                for f in ma_filings[:3]
-            ])
+            result["recent_corporate_actions"].extend(
+                [
+                    {
+                        "type": f["form"],
+                        "description": f"SEC filing {f['form']}: {f.get('description', 'M&A-related filing')}",
+                        "source": "SEC EDGAR",
+                        "date": f.get("filed"),
+                    }
+                    for f in ma_filings[:3]
+                ]
+            )
     else:
         logger.debug(f"SEC EDGAR lookup failed for '{entity_name}': {sec_result}")
 
@@ -110,12 +115,14 @@ async def _opencorporates_lookup(
 
     # Map OpenCorporates dissolution status to a corporate action
     if company.get("current_status") in ("Dissolved", "Inactive", "Liquidation"):
-        actions.append({
-            "type": "dissolution",
-            "description": f"Company status: {company['current_status']}",
-            "source": "OpenCorporates",
-            "date": company.get("dissolution_date"),
-        })
+        actions.append(
+            {
+                "type": "dissolution",
+                "description": f"Company status: {company['current_status']}",
+                "source": "OpenCorporates",
+                "date": company.get("dissolution_date"),
+            }
+        )
 
     return {
         "jurisdiction": company.get("jurisdiction_code"),
@@ -146,15 +153,20 @@ async def _edgar_lookup(entity_name: str) -> dict[str, Any]:
     filings = []
     for hit in hits[:10]:
         src = hit.get("_source", {})
-        filings.append({
-            "form": src.get("form_type", ""),
-            "description": src.get("display_names", [""])[0] if src.get("display_names") else "",
-            "filed": src.get("file_date", ""),
-            "period": src.get("period_of_report", ""),
-        })
+        filings.append(
+            {
+                "form": src.get("form_type", ""),
+                "description": src.get("display_names", [""])[0]
+                if src.get("display_names")
+                else "",
+                "filed": src.get("file_date", ""),
+                "period": src.get("period_of_report", ""),
+            }
+        )
     return {"filings": filings}
 
 
 def _one_year_ago() -> str:
     from datetime import date, timedelta
+
     return (date.today() - timedelta(days=365)).isoformat()

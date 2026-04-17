@@ -11,6 +11,7 @@ This module re-exports it so imports like:
     from data.models.outcome import MarketOutcome
 work as expected by the rest of the codebase.
 """
+
 from data.models.dispute import MarketOutcome
 
 __all__ = ["MarketOutcome"]

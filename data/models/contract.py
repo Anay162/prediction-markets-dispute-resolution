@@ -2,17 +2,24 @@
 SQLAlchemy ORM models for the core contract and report tables.
 Uses async-compatible declarative base.
 """
+
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, date
+from datetime import date, datetime
 
 from sqlalchemy import (
-    String, Text, Integer, Float, Boolean,
-    DateTime, Date, Enum as SAEnum, JSON,
-    ForeignKey, Index
+    JSON,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
 )
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -23,9 +30,7 @@ class Base(DeclarativeBase):
 class Contract(Base):
     __tablename__ = "contracts"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     question: Mapped[str] = mapped_column(Text, nullable=False)
     resolution_criteria: Mapped[str] = mapped_column(Text, nullable=False)
     resolution_source: Mapped[str] = mapped_column(Text, nullable=False)
@@ -42,7 +47,7 @@ class Contract(Base):
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )
 
-    reports: Mapped[list["Report"]] = relationship("Report", back_populates="contract")
+    reports: Mapped[list[Report]] = relationship("Report", back_populates="contract")
 
     __table_args__ = (
         Index("ix_contracts_platform", "platform"),
@@ -54,9 +59,7 @@ class Contract(Base):
 class Report(Base):
     __tablename__ = "reports"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     contract_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("contracts.id"), nullable=False
     )
@@ -77,8 +80,8 @@ class Report(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
-    contract: Mapped["Contract"] = relationship("Contract", back_populates="reports")
-    findings: Mapped[list["FindingRecord"]] = relationship(
+    contract: Mapped[Contract] = relationship("Contract", back_populates="reports")
+    findings: Mapped[list[FindingRecord]] = relationship(
         "FindingRecord", back_populates="report", order_by="FindingRecord.severity_rank"
     )
 
@@ -91,9 +94,7 @@ class Report(Base):
 class FindingRecord(Base):
     __tablename__ = "findings"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     report_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("reports.id"), nullable=False
     )
@@ -112,7 +113,7 @@ class FindingRecord(Base):
     evidence: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     confidence: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
 
-    report: Mapped["Report"] = relationship("Report", back_populates="findings")
+    report: Mapped[Report] = relationship("Report", back_populates="findings")
 
     __table_args__ = (
         Index("ix_findings_report_id", "report_id"),

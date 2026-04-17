@@ -11,6 +11,7 @@ Usage:
     python -m tests.evals.run_evals --fixture adversarial
     python -m tests.evals.run_evals --verbose
 """
+
 from __future__ import annotations
 
 import argparse
@@ -28,11 +29,12 @@ FIXTURES_PATH = Path(__file__).parent.parent / "fixtures" / "contracts"
 
 
 async def run_evals(fixture_filter: str | None, verbose: bool) -> dict:
-    from integrations.llm.client import LLMClient
-    from core.pipeline import AuditPipeline
-    from api.schemas.contract import ContractInput, Platform
     from contextlib import asynccontextmanager
-    from unittest.mock import MagicMock, AsyncMock
+    from unittest.mock import AsyncMock, MagicMock
+
+    from api.schemas.contract import ContractInput, Platform
+    from core.pipeline import AuditPipeline
+    from integrations.llm.client import LLMClient
 
     # Load golden set
     if not GOLDEN_SET_PATH.exists():
@@ -59,9 +61,11 @@ async def run_evals(fixture_filter: str | None, verbose: bool) -> dict:
     @asynccontextmanager
     async def mock_db():
         session = MagicMock()
-        session.execute = AsyncMock(return_value=MagicMock(
-            scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[])))
-        ))
+        session.execute = AsyncMock(
+            return_value=MagicMock(
+                scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[])))
+            )
+        )
         yield session
 
     pipeline = AuditPipeline(llm_client=llm, db_session_factory=mock_db)
@@ -78,6 +82,7 @@ async def run_evals(fixture_filter: str | None, verbose: bool) -> dict:
 
         try:
             from datetime import date
+
             contract = ContractInput(
                 question=fixture["question"],
                 resolution_criteria=fixture["resolution_criteria"],
@@ -90,6 +95,7 @@ async def run_evals(fixture_filter: str | None, verbose: bool) -> dict:
             continue
 
         import uuid
+
         logger.info(f"Evaluating: {fixture['question'][:60]}...")
         try:
             report = await pipeline.run(contract, uuid.uuid4())
@@ -150,13 +156,13 @@ async def run_evals(fixture_filter: str | None, verbose: bool) -> dict:
     }
 
     logger.info(
-        f"\n{'='*50}\n"
+        f"\n{'=' * 50}\n"
         f"EVAL SUMMARY ({len(results)} examples)\n"
         f"  Precision:      {avg_precision:.1%}\n"
         f"  Recall:         {avg_recall:.1%}\n"
         f"  F1:             {avg_f1:.1%}\n"
         f"  Score accuracy: {score_accuracy:.1%}\n"
-        f"{'='*50}"
+        f"{'=' * 50}"
     )
     return summary
 

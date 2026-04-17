@@ -7,6 +7,7 @@ which the dashboard renders as highlighted before/after text.
 
 Operations: "equal" | "insert" | "delete"
 """
+
 from __future__ import annotations
 
 import difflib
@@ -31,9 +32,7 @@ def generate_diff(original: str, rewritten: str) -> list[tuple[str, str]]:
     original_words = _tokenize(original)
     rewritten_words = _tokenize(rewritten)
 
-    matcher = difflib.SequenceMatcher(
-        None, original_words, rewritten_words, autojunk=False
-    )
+    matcher = difflib.SequenceMatcher(None, original_words, rewritten_words, autojunk=False)
 
     result: list[tuple[str, str]] = []
     for tag, i1, i2, j1, j2 in matcher.get_opcodes():

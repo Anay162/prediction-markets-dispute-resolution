@@ -10,6 +10,7 @@ The analyzers call:
     enrichment.lookup_entity(name)
     enrichment.find_similar_disputes(text, category, limit)
 """
+
 from __future__ import annotations
 
 import logging
@@ -17,9 +18,9 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.enrichment.source_probe import probe_source
-from core.enrichment.entity_lookup import lookup_entity
 from core.enrichment.dispute_lookup import find_similar_disputes
+from core.enrichment.entity_lookup import lookup_entity
+from core.enrichment.source_probe import probe_source
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class EnrichmentClient:
     def __init__(
         self,
         db: AsyncSession,
-        llm_client,                         # For generating query embeddings
+        llm_client,  # For generating query embeddings
         opencorporates_api_key: str | None = None,
     ):
         self._db = db

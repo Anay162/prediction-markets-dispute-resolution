@@ -4,11 +4,12 @@ data/cache/redis_client.py
 Async Redis client and simple get/set/delete helpers used by the
 report cache and source probe cache.
 """
+
 from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import redis.asyncio as aioredis
 

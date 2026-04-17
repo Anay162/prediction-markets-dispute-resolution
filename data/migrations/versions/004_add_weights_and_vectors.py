@@ -4,8 +4,9 @@ data/migrations/versions/004_add_weights_and_vectors.py
 Adds scoring_weights table and enables pgvector for similarity search.
 Also migrates the embedding columns from JSON to VECTOR(1536).
 """
-from alembic import op
+
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision = "004"
@@ -27,12 +28,10 @@ def upgrade() -> None:
         sa.Column("high_penalty", sa.Integer, nullable=False, server_default="12"),
         sa.Column("medium_penalty", sa.Integer, nullable=False, server_default="5"),
         sa.Column("low_penalty", sa.Integer, nullable=False, server_default="2"),
-        sa.Column("category_multipliers", postgresql.JSONB, nullable=False,
-                  server_default="{}"),
+        sa.Column("category_multipliers", postgresql.JSONB, nullable=False, server_default="{}"),
         sa.Column("calibration_notes", sa.Text, nullable=True),
         sa.Column("calibration_accuracy", sa.Float, nullable=True),
-        sa.Column("created_at", sa.DateTime, nullable=False,
-                  server_default=sa.text("NOW()")),
+        sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
     )
     op.create_index("ix_scoring_weights_is_active", "scoring_weights", ["is_active"])
 

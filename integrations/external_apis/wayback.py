@@ -6,6 +6,7 @@ Used by the source probe enrichment to check archival history of URLs.
 
 CDX API docs: https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server
 """
+
 from __future__ import annotations
 
 import logging
@@ -23,7 +24,7 @@ TIMEOUT = 15
 
 async def get_snapshot_history(
     url: str,
-    collapse_by: str = "timestamp:6",   # Collapse by month — avoids huge responses
+    collapse_by: str = "timestamp:6",  # Collapse by month — avoids huge responses
     limit: int = 100,
     status_filter: str = "200",
 ) -> dict[str, Any]:
@@ -67,12 +68,14 @@ async def get_snapshot_history(
         snapshots = []
         for row in data_rows:
             if len(row) >= 2:
-                snapshots.append({
-                    "timestamp": row[0],
-                    "statuscode": row[1],
-                    "mimetype": row[2] if len(row) > 2 else None,
-                    "url": f"https://web.archive.org/web/{row[0]}/{url}",
-                })
+                snapshots.append(
+                    {
+                        "timestamp": row[0],
+                        "statuscode": row[1],
+                        "mimetype": row[2] if len(row) > 2 else None,
+                        "url": f"https://web.archive.org/web/{row[0]}/{url}",
+                    }
+                )
 
         first_iso = _ts_to_iso(snapshots[0]["timestamp"]) if snapshots else None
         last_iso = _ts_to_iso(snapshots[-1]["timestamp"]) if snapshots else None
@@ -82,7 +85,7 @@ async def get_snapshot_history(
             "snapshot_count": len(snapshots),
             "first_snapshot": first_iso,
             "last_snapshot": last_iso,
-            "snapshots": snapshots[:10],   # Return at most 10 for the report
+            "snapshots": snapshots[:10],  # Return at most 10 for the report
         }
 
     except Exception as e:

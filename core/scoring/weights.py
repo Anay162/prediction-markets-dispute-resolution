@@ -8,10 +8,10 @@ The active weight set is determined by the is_active=True flag on the
 scoring_weights table. Only one row should be active at a time.
 Falls back to hardcoded defaults if DB is unavailable or no active set found.
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from api.schemas.report import Severity, VulnerabilityCategory
 
@@ -35,7 +35,9 @@ DEFAULT_CATEGORY_MULTIPLIERS: dict[VulnerabilityCategory, float] = {
 }
 
 
-async def load_active_weights(db) -> tuple[
+async def load_active_weights(
+    db,
+) -> tuple[
     dict[Severity, int],
     dict[VulnerabilityCategory, float],
 ]:
@@ -51,6 +53,7 @@ async def load_active_weights(db) -> tuple[
     """
     try:
         from sqlalchemy import select
+
         from data.models.dispute import ScoringWeight
 
         result = await db.execute(

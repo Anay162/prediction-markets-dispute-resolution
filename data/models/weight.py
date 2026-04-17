@@ -10,6 +10,7 @@ This module re-exports it so imports like:
     from data.models.weight import ScoringWeight
 work as expected.
 """
+
 from data.models.dispute import ScoringWeight
 
 __all__ = ["ScoringWeight"]

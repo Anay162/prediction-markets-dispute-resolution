@@ -8,6 +8,7 @@ Provides a single place to:
   - Compute severity rank for sorting (critical=1, low=4)
   - Map severity to human-readable display strings and colours
 """
+
 from __future__ import annotations
 
 from api.schemas.report import Severity

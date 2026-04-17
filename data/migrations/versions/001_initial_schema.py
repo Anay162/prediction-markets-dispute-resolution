@@ -3,8 +3,9 @@ data/migrations/versions/001_initial_schema.py
 
 Initial schema: contracts, reports, findings, api_keys tables.
 """
-from alembic import op
+
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision = "001"
@@ -18,8 +19,12 @@ def upgrade() -> None:
 
     op.create_table(
         "contracts",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True,
-                  server_default=sa.text("uuid_generate_v4()")),
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("uuid_generate_v4()"),
+        ),
         sa.Column("question", sa.Text, nullable=False),
         sa.Column("resolution_criteria", sa.Text, nullable=False),
         sa.Column("resolution_source", sa.Text, nullable=False),
@@ -27,10 +32,8 @@ def upgrade() -> None:
         sa.Column("platform", sa.String(50), nullable=False, server_default="generic"),
         sa.Column("metadata", postgresql.JSONB, nullable=False, server_default="{}"),
         sa.Column("embedding", postgresql.JSON, nullable=True),
-        sa.Column("created_at", sa.DateTime, nullable=False,
-                  server_default=sa.text("NOW()")),
-        sa.Column("updated_at", sa.DateTime, nullable=False,
-                  server_default=sa.text("NOW()")),
+        sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
+        sa.Column("updated_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
     )
     op.create_index("ix_contracts_platform", "contracts", ["platform"])
     op.create_index("ix_contracts_close_date", "contracts", ["close_date"])
@@ -38,10 +41,18 @@ def upgrade() -> None:
 
     op.create_table(
         "reports",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True,
-                  server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("contract_id", postgresql.UUID(as_uuid=True),
-                  sa.ForeignKey("contracts.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("uuid_generate_v4()"),
+        ),
+        sa.Column(
+            "contract_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("contracts.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("job_id", postgresql.UUID(as_uuid=True), nullable=False, unique=True),
         sa.Column("resolution_clarity_score", sa.Integer, nullable=False),
         sa.Column("score_label", sa.String(50), nullable=False),
@@ -52,18 +63,25 @@ def upgrade() -> None:
         sa.Column("rewritten_contract", sa.Text, nullable=True),
         sa.Column("audit_duration_seconds", sa.Float, nullable=False),
         sa.Column("model_version", sa.String(100), nullable=False),
-        sa.Column("created_at", sa.DateTime, nullable=False,
-                  server_default=sa.text("NOW()")),
+        sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
     )
     op.create_index("ix_reports_contract_id", "reports", ["contract_id"])
     op.create_index("ix_reports_score", "reports", ["resolution_clarity_score"])
 
     op.create_table(
         "findings",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True,
-                  server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("report_id", postgresql.UUID(as_uuid=True),
-                  sa.ForeignKey("reports.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("uuid_generate_v4()"),
+        ),
+        sa.Column(
+            "report_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("reports.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("category", sa.String(50), nullable=False),
         sa.Column("severity", sa.String(20), nullable=False),
         sa.Column("severity_rank", sa.Integer, nullable=False),
@@ -80,8 +98,12 @@ def upgrade() -> None:
 
     op.create_table(
         "api_keys",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True,
-                  server_default=sa.text("uuid_generate_v4()")),
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("uuid_generate_v4()"),
+        ),
         sa.Column("name", sa.String(200), nullable=False),
         sa.Column("key_hash", sa.String(64), nullable=False, unique=True),
         sa.Column("key_prefix", sa.String(12), nullable=False),

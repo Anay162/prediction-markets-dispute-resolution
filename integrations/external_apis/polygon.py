@@ -8,6 +8,7 @@ referenced in a contract is still actively traded.
 API docs: https://polygon.io/docs
 Free tier supports ticker details and recent status checks.
 """
+
 from __future__ import annotations
 
 import logging

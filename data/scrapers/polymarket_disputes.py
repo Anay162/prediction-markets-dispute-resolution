@@ -5,6 +5,7 @@ Scrapes Polymarket's public dispute/resolution history via their API.
 Polymarket uses UMA's Optimistic Oracle for resolution disputes.
 All dispute data is on-chain and publicly accessible.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -91,8 +92,7 @@ def _extract_dispute_info(market: dict) -> dict | None:
     outcome = market.get("outcome", "") or ""
 
     has_dispute_signal = any(
-        sig.lower() in (resolution + outcome + description).lower()
-        for sig in dispute_signals
+        sig.lower() in (resolution + outcome + description).lower() for sig in dispute_signals
     )
 
     if not has_dispute_signal:
@@ -106,7 +106,7 @@ def _extract_dispute_info(market: dict) -> dict | None:
         "question": question,
         "resolution_criteria": description,
         "resolution_source": resolution_source,
-        "failure_category": None,          # Labeled later by classifier
+        "failure_category": None,  # Labeled later by classifier
         "dispute_reason": f"Resolution: {resolution}. Outcome: {outcome}",
         "resolution": resolution,
         "raw_data": market,

@@ -9,10 +9,11 @@ a valid API key through the browser UI.
 Tokens are short-lived (1 hour) and carry the API key prefix
 so we can identify which key was used without re-hashing.
 """
+
 from __future__ import annotations
 
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import jwt
@@ -38,7 +39,7 @@ def create_access_token(
     Returns:
         Signed JWT string
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload: dict[str, Any] = {
         "sub": subject,
         "iat": now,

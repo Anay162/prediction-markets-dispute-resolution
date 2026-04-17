@@ -5,12 +5,14 @@ Standalone retry and backoff utilities for LLM API calls.
 Extracted from client.py so they can be used independently
 and tested without instantiating a full LLMClient.
 """
+
 from __future__ import annotations
 
 import asyncio
 import logging
 import random
-from typing import TypeVar, Callable, Awaitable
+from collections.abc import Awaitable, Callable
+from typing import TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +31,9 @@ def exponential_backoff(
     Sequence (base=1, cap=30, no jitter): 1s, 2s, 4s, 8s, 16s, 30s, 30s...
     With jitter: ±25% randomisation to spread out thundering herd.
     """
-    delay = min(base * (2 ** attempt), cap)
+    delay = min(base * (2**attempt), cap)
     if jitter:
-        delay *= (0.75 + random.random() * 0.5)
+        delay *= 0.75 + random.random() * 0.5
     return delay
 
 
@@ -69,7 +71,7 @@ async def retry_async(
     for attempt in range(max_retries + 1):
         try:
             return await fn(*args, **kwargs)
-        except non_retryable_exceptions as e:
+        except non_retryable_exceptions:
             raise
         except retryable_exceptions as e:
             last_exc = e

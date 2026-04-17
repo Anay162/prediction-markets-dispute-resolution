@@ -7,6 +7,7 @@ Keys are stored hashed (SHA-256) in the api_keys table.
 The raw key is shown once on creation and never stored.
 Format: "ca_live_<32 random hex chars>"
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -40,7 +41,7 @@ async def create_api_key(
     db: AsyncSession,
     name: str,
     test: bool = False,
-) -> tuple[str, "APIKey"]:
+) -> tuple[str, APIKey]:
     """
     Create a new API key record.
     Returns (raw_key, APIKey ORM object).
@@ -53,7 +54,7 @@ async def create_api_key(
         id=uuid.uuid4(),
         name=name,
         key_hash=key_hash,
-        key_prefix=raw[:12],    # Store first 12 chars so users can identify their key
+        key_prefix=raw[:12],  # Store first 12 chars so users can identify their key
         is_test=test,
         is_active=True,
         created_at=datetime.utcnow(),
@@ -65,7 +66,7 @@ async def create_api_key(
     return raw, record
 
 
-async def verify_api_key(db: AsyncSession, raw_key: str) -> "APIKey | None":
+async def verify_api_key(db: AsyncSession, raw_key: str) -> APIKey | None:
     """
     Verify a raw API key against the database.
     Updates last_used_at and request_count on success.

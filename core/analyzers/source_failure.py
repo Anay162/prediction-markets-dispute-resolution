@@ -7,14 +7,14 @@ change methodology, or contradict itself before close date.
 Post-processing: probes the source URL live and attaches HTTP status
 and Wayback Machine archival history as evidence.
 """
+
 from __future__ import annotations
 
 import logging
 
-from api.schemas.report import VulnerabilityCategory
+from api.schemas.report import Finding, VulnerabilityCategory
 from core.analyzers.base import BaseAnalyzer
 from core.parser.entity_extractor import ParsedContract
-from api.schemas.report import Finding
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +39,8 @@ class SourceFailureAnalyzer(BaseAnalyzer):
             # If the source is already unreachable, add a critical finding
             # regardless of what the LLM found
             if probe_result.get("status") in (404, 410, None):
-                from uuid import uuid4
                 from api.schemas.report import Severity
+
                 dead_finding = Finding(
                     category=self.category,
                     severity=Severity.critical,

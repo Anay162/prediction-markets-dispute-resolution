@@ -5,6 +5,7 @@ Celery task for generating PDF reports asynchronously.
 PDF generation with WeasyPrint can be slow (1-3 seconds),
 so for large batches we queue it rather than blocking the API.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -38,11 +39,11 @@ def generate_pdf(report_id: str) -> dict:
 
 
 async def _generate_pdf_async(report_id: str) -> dict:
-    from data.database import init_db, get_session
-    from data.repositories.contract_repo import get_report
-    from api.schemas.report import ReportOutput, Finding, Severity, VulnerabilityCategory
+
+    from api.schemas.report import Finding, ReportOutput, Severity, VulnerabilityCategory
     from core.report.pdf_renderer import render_pdf
-    import tempfile
+    from data.database import get_session, init_db
+    from data.repositories.contract_repo import get_report
 
     init_db(os.environ["DATABASE_URL"])
     report_uuid = uuid.UUID(report_id)

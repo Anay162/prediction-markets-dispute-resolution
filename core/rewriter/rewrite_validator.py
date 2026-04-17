@@ -13,9 +13,9 @@ The LLM validator is defined by core/prompts/rewrite_validator.txt.
 This module adds a layer of deterministic checks that run before/after
 the LLM call and can catch obvious regressions without spending tokens.
 """
+
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 
 from api.schemas.report import Finding
@@ -24,7 +24,7 @@ from api.schemas.report import Finding
 @dataclass
 class ValidationResult:
     approved: bool
-    quality_score: int          # 1–5
+    quality_score: int  # 1–5
     closes_vulnerability: bool
     new_issues: list[str]
     closure_explanation: str
@@ -64,7 +64,7 @@ def deterministic_validate(
     # Timezone check: if original had no timezone and finding mentions timezone,
     # the rewrite should contain a UTC reference
     desc_lower = finding.description.lower()
-    if ("timezone" in desc_lower or "time zone" in desc_lower or "utc" in desc_lower):
+    if "timezone" in desc_lower or "time zone" in desc_lower or "utc" in desc_lower:
         rewrite_lower = rewritten_clause.lower()
         if "utc" not in rewrite_lower and "gmt" not in rewrite_lower:
             issues.append(
@@ -76,7 +76,10 @@ def deterministic_validate(
     rewrite_lower = rewritten_clause.lower()
     for vague in ("exceeds", "reaches", "surpasses"):
         if vague in original_lower and vague in rewrite_lower:
-            if "strictly greater" not in rewrite_lower and "greater than or equal" not in rewrite_lower:
+            if (
+                "strictly greater" not in rewrite_lower
+                and "greater than or equal" not in rewrite_lower
+            ):
                 issues.append(
                     f"Vague comparator '{vague}' still present in rewrite — "
                     f"replace with 'strictly greater than' or 'greater than or equal to'"

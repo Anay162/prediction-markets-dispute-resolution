@@ -4,6 +4,7 @@ api/main.py
 FastAPI application entry point.
 Handles startup/shutdown, CORS, routers, and exception handlers.
 """
+
 from __future__ import annotations
 
 import logging
@@ -16,7 +17,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from api.routers import audit, contracts, reports, health
+from api.routers import audit, contracts, health, reports
 
 logger = structlog.get_logger()
 
@@ -27,8 +28,8 @@ async def lifespan(app: FastAPI):
     # Startup
     _configure_logging()
 
-    from data.database import init_db
     from data.cache.redis_client import init_redis
+    from data.database import init_db
 
     init_db(
         database_url=os.environ["DATABASE_URL"],
@@ -39,8 +40,8 @@ async def lifespan(app: FastAPI):
 
     # Build the LLM client and pipeline and stash on app.state
     # so routers can access it without recreating per request
-    from integrations.llm.client import LLMClient
     from core.pipeline import AuditPipeline
+    from integrations.llm.client import LLMClient
 
     llm = LLMClient(
         anthropic_api_key=os.environ["ANTHROPIC_API_KEY"],
@@ -58,6 +59,7 @@ async def lifespan(app: FastAPI):
     if sentry_dsn:
         import sentry_sdk
         from sentry_sdk.integrations.fastapi import FastApiIntegration
+
         sentry_sdk.init(dsn=sentry_dsn, integrations=[FastApiIntegration()])
 
     logger.info("Application startup complete")
@@ -88,6 +90,7 @@ app.add_middleware(
 # Request timing middleware
 # ------------------------------------------------------------------
 
+
 @app.middleware("http")
 async def add_timing_header(request: Request, call_next):
     start = time.monotonic()
@@ -100,6 +103,7 @@ async def add_timing_header(request: Request, call_next):
 # ------------------------------------------------------------------
 # Global exception handlers
 # ------------------------------------------------------------------
+
 
 @app.exception_handler(ValueError)
 async def value_error_handler(request: Request, exc: ValueError):
@@ -129,8 +133,10 @@ app.include_router(reports.router, prefix="/v1", tags=["reports"])
 # Helpers
 # ------------------------------------------------------------------
 
+
 def _get_session_factory():
     from data.database import get_session
+
     return get_session
 
 

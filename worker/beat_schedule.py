@@ -5,8 +5,10 @@ Celery Beat periodic task schedule.
 Run the beat scheduler with:
     celery -A worker.celery_app beat --schedule=/tmp/celerybeat-schedule -l info
 """
-from worker.celery_app import celery_app
+
 from celery.schedules import crontab
+
+from worker.celery_app import celery_app
 
 celery_app.conf.beat_schedule = {
     # Scrape all dispute sources nightly at 2:00 AM UTC

@@ -6,17 +6,16 @@ Complements contract_repo.py — the split follows the spec's
 file structure. contract_repo.py handles contracts; this
 handles reports and findings as the primary resource.
 """
+
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
-from typing import Optional
 
-from sqlalchemy import select, desc, func
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from data.models.contract import Report, FindingRecord
+from data.models.contract import FindingRecord, Report
 
 
 async def get_report(
@@ -38,9 +37,7 @@ async def get_report_by_job(
 ) -> Report | None:
     """Fetch a report by its job UUID (the Celery task ID)."""
     result = await db.execute(
-        select(Report)
-        .where(Report.job_id == job_id)
-        .options(selectinload(Report.findings))
+        select(Report).where(Report.job_id == job_id).options(selectinload(Report.findings))
     )
     return result.scalar_one_or_none()
 
@@ -53,12 +50,7 @@ async def list_reports(
     max_score: int | None = None,
 ) -> list[Report]:
     """List reports, optionally filtered by score range."""
-    q = (
-        select(Report)
-        .order_by(desc(Report.created_at))
-        .limit(limit)
-        .offset(offset)
-    )
+    q = select(Report).order_by(desc(Report.created_at)).limit(limit).offset(offset)
     if min_score is not None:
         q = q.where(Report.resolution_clarity_score >= min_score)
     if max_score is not None:
@@ -89,18 +81,15 @@ async def get_score_distribution(db: AsyncSession) -> dict[str, int]:
     result = await db.execute(
         select(
             func.count().filter(Report.resolution_clarity_score >= 85).label("well_specified"),
-            func.count().filter(
-                Report.resolution_clarity_score >= 70,
-                Report.resolution_clarity_score < 85
-            ).label("minor_issues"),
-            func.count().filter(
-                Report.resolution_clarity_score >= 50,
-                Report.resolution_clarity_score < 70
-            ).label("moderate_risk"),
-            func.count().filter(
-                Report.resolution_clarity_score >= 30,
-                Report.resolution_clarity_score < 50
-            ).label("high_risk"),
+            func.count()
+            .filter(Report.resolution_clarity_score >= 70, Report.resolution_clarity_score < 85)
+            .label("minor_issues"),
+            func.count()
+            .filter(Report.resolution_clarity_score >= 50, Report.resolution_clarity_score < 70)
+            .label("moderate_risk"),
+            func.count()
+            .filter(Report.resolution_clarity_score >= 30, Report.resolution_clarity_score < 50)
+            .label("high_risk"),
             func.count().filter(Report.resolution_clarity_score < 30).label("critical"),
         )
     )

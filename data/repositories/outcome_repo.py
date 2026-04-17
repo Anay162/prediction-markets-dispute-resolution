@@ -5,12 +5,13 @@ Database operations for market resolution outcomes.
 Outcomes feed the scoring calibration loop — they are the ground
 truth that tells us whether our RCS predictions were accurate.
 """
+
 from __future__ import annotations
 
 import uuid
 from datetime import datetime
 
-from sqlalchemy import select, update, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.models.dispute import MarketOutcome
@@ -67,12 +68,7 @@ async def list_outcomes(
     offset: int = 0,
     dispute_only: bool = False,
 ) -> list[MarketOutcome]:
-    q = (
-        select(MarketOutcome)
-        .order_by(desc(MarketOutcome.recorded_at))
-        .limit(limit)
-        .offset(offset)
-    )
+    q = select(MarketOutcome).order_by(desc(MarketOutcome.recorded_at)).limit(limit).offset(offset)
     if dispute_only:
         q = q.where(MarketOutcome.dispute_filed == True)
     result = await db.execute(q)
@@ -88,7 +84,9 @@ async def get_calibration_dataset(
     Used by calibrate_weights.py to tune scoring penalties.
     """
     from sqlalchemy import text
-    result = await db.execute(text("""
+
+    result = await db.execute(
+        text("""
         SELECT
             o.resolved_cleanly,
             o.dispute_filed,
@@ -103,7 +101,8 @@ async def get_calibration_dataset(
         WHERE r.resolution_clarity_score IS NOT NULL
           AND (o.resolved_cleanly IS NOT NULL OR o.dispute_filed = true)
         ORDER BY o.recorded_at DESC
-    """))
+    """)
+    )
     rows = result.fetchall()
     return [
         {

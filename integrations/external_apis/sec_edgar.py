@@ -9,6 +9,7 @@ All EDGAR APIs are free and require no authentication.
 EDGAR full-text search: https://efts.sec.gov/LATEST/search-index
 EDGAR company search:   https://www.sec.gov/cgi-bin/browse-edgar
 """
+
 from __future__ import annotations
 
 import logging
@@ -66,13 +67,15 @@ async def search_filings(
         for hit in hits:
             src = hit.get("_source", {})
             display_names = src.get("display_names", [])
-            filings.append({
-                "form": src.get("form_type", ""),
-                "description": display_names[0] if display_names else entity_name,
-                "filed": src.get("file_date", ""),
-                "period": src.get("period_of_report", ""),
-                "cik": src.get("entity_id", ""),
-            })
+            filings.append(
+                {
+                    "form": src.get("form_type", ""),
+                    "description": display_names[0] if display_names else entity_name,
+                    "filed": src.get("file_date", ""),
+                    "period": src.get("period_of_report", ""),
+                    "cik": src.get("entity_id", ""),
+                }
+            )
         return filings
 
     except Exception as e:

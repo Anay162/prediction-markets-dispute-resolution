@@ -1,12 +1,12 @@
 """
 Pydantic schemas for the POST /audit request and response envelope.
 """
+
 from __future__ import annotations
 
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -23,6 +23,7 @@ class AuditStatus(str, Enum):
 
 class AuditRequest(BaseModel):
     """Body for POST /audit."""
+
     contract: ContractInput
 
     # If true, run synchronously and return the full report in one response.
@@ -36,29 +37,31 @@ class AuditResponse(BaseModel):
     If sync=False (default), contains job_id for polling.
     If sync=True, contains the full report inline.
     """
+
     job_id: uuid.UUID
     status: AuditStatus
-    contract_id: Optional[uuid.UUID] = None
+    contract_id: uuid.UUID | None = None
 
     # Only populated when status == "complete"
-    report: Optional[ReportOutput] = None
+    report: ReportOutput | None = None
 
     # Only populated when status == "failed"
-    error: Optional[str] = None
+    error: str | None = None
 
     # Estimated seconds until completion (for pending/running)
-    estimated_seconds: Optional[int] = None
+    estimated_seconds: int | None = None
 
     created_at: datetime
 
 
 class AuditStatusResponse(BaseModel):
     """Response to GET /audit/{job_id}/status."""
+
     job_id: uuid.UUID
     status: AuditStatus
-    progress_pct: int = 0       # 0-100
-    current_stage: str = ""     # e.g. "Running threshold_gaming analyzer"
-    report: Optional[ReportOutput] = None
-    error: Optional[str] = None
+    progress_pct: int = 0  # 0-100
+    current_stage: str = ""  # e.g. "Running threshold_gaming analyzer"
+    report: ReportOutput | None = None
+    error: str | None = None
     created_at: datetime
     updated_at: datetime

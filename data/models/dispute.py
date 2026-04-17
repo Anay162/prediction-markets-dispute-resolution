@@ -2,14 +2,25 @@
 ORM models for historical dispute records and market resolution outcomes.
 These feed the scoring calibration loop.
 """
+
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, date
-from typing import Optional
+from datetime import date, datetime
 
-from sqlalchemy import String, Text, Integer, Float, Boolean, DateTime, Date, JSON, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from data.models.contract import Base
@@ -20,11 +31,10 @@ class DisputeRecord(Base):
     A historical dispute from an external platform (Polymarket, UMA, Manifold, Augur).
     Used to seed the vector store and calibrate scoring weights.
     """
+
     __tablename__ = "disputes"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Which platform this dispute came from
     source_platform: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -69,11 +79,10 @@ class MarketOutcome(Base):
     When a market resolves cleanly → our high score was correct.
     When a market is disputed → we should have flagged it higher.
     """
+
     __tablename__ = "market_outcomes"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     contract_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("contracts.id"), nullable=False
     )
@@ -114,6 +123,7 @@ class ScoringWeight(Base):
     Allows us to tune RCS weights as we accumulate outcome data,
     and roll back if a weight change makes things worse.
     """
+
     __tablename__ = "scoring_weights"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -135,6 +145,4 @@ class ScoringWeight(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
-    __table_args__ = (
-        Index("ix_scoring_weights_is_active", "is_active"),
-    )
+    __table_args__ = (Index("ix_scoring_weights_is_active", "is_active"),)

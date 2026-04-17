@@ -14,6 +14,7 @@ Task flow:
   4. Persist the report to the database
   5. Update job status to "complete" (or "failed") in Redis
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -35,6 +36,7 @@ class AuditTask(Task):
     The pipeline (and its LLM client) is expensive to construct —
     we build it once per worker process and reuse it.
     """
+
     _pipeline = None
 
     @property
@@ -76,13 +78,16 @@ async def _run_audit_async(task: AuditTask, job_id: str, contract_dict: dict) ->
     job_uuid = uuid.UUID(job_id)
 
     # Mark job as running
-    await job_set_status(job_id, {
-        "job_id": job_id,
-        "status": "running",
-        "progress_pct": 0,
-        "current_stage": "Starting",
-        "updated_at": datetime.utcnow().isoformat(),
-    })
+    await job_set_status(
+        job_id,
+        {
+            "job_id": job_id,
+            "status": "running",
+            "progress_pct": 0,
+            "current_stage": "Starting",
+            "updated_at": datetime.utcnow().isoformat(),
+        },
+    )
 
     try:
         contract = ContractInput(**contract_dict)
@@ -99,14 +104,17 @@ async def _run_audit_async(task: AuditTask, job_id: str, contract_dict: dict) ->
 
         # Persist to database
         async with get_session() as db:
-            contract_record = await create_contract(db, {
-                "question": contract.question,
-                "resolution_criteria": contract.resolution_criteria,
-                "resolution_source": contract.resolution_source,
-                "close_date": contract.close_date,
-                "platform": contract.platform.value,
-                "metadata": contract.metadata,
-            })
+            contract_record = await create_contract(
+                db,
+                {
+                    "question": contract.question,
+                    "resolution_criteria": contract.resolution_criteria,
+                    "resolution_source": contract.resolution_source,
+                    "close_date": contract.close_date,
+                    "platform": contract.platform.value,
+                    "metadata": contract.metadata,
+                },
+            )
             await create_report(
                 db=db,
                 job_id=job_uuid,
@@ -116,39 +124,45 @@ async def _run_audit_async(task: AuditTask, job_id: str, contract_dict: dict) ->
             )
 
         # Mark complete
-        await job_set_status(job_id, {
-            "job_id": job_id,
-            "status": "complete",
-            "progress_pct": 100,
-            "current_stage": "Complete",
-            "report_id": str(report.id),
-            "contract_id": str(contract_record.id),
-            "updated_at": datetime.utcnow().isoformat(),
-        })
+        await job_set_status(
+            job_id,
+            {
+                "job_id": job_id,
+                "status": "complete",
+                "progress_pct": 100,
+                "current_stage": "Complete",
+                "report_id": str(report.id),
+                "contract_id": str(contract_record.id),
+                "updated_at": datetime.utcnow().isoformat(),
+            },
+        )
 
         logger.info(f"Audit job {job_id} completed. Report: {report.id}")
         return {"status": "complete", "report_id": str(report.id), "error": None}
 
     except Exception as exc:
         logger.error(f"Audit job {job_id} failed: {exc}", exc_info=True)
-        await job_set_status(job_id, {
-            "job_id": job_id,
-            "status": "failed",
-            "progress_pct": 0,
-            "current_stage": "Failed",
-            "error": str(exc),
-            "updated_at": datetime.utcnow().isoformat(),
-        })
+        await job_set_status(
+            job_id,
+            {
+                "job_id": job_id,
+                "status": "failed",
+                "progress_pct": 0,
+                "current_stage": "Failed",
+                "error": str(exc),
+                "updated_at": datetime.utcnow().isoformat(),
+            },
+        )
         # Retry on unexpected errors, but not on validation errors
         if not isinstance(exc, (ValueError, TypeError)):
-            raise task.retry(exc=exc)
+            raise task.retry(exc=exc) from exc
         return {"status": "failed", "report_id": None, "error": str(exc)}
 
 
 def _build_pipeline():
     """Build the AuditPipeline. Called once per worker process."""
     from core.pipeline import AuditPipeline
-    from data.database import init_db, get_session
+    from data.database import get_session, init_db
     from integrations.llm.client import LLMClient
 
     init_db(os.environ["DATABASE_URL"])

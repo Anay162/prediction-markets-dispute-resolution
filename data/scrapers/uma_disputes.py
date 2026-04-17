@@ -5,6 +5,7 @@ Pulls UMA Optimistic Oracle dispute records from The Graph subgraph.
 UMA is used by Polymarket and other platforms for dispute resolution.
 All data is public on-chain.
 """
+
 from __future__ import annotations
 
 import logging
@@ -14,9 +15,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-UMA_SUBGRAPH = (
-    "https://api.thegraph.com/subgraphs/name/umaprotocol/mainnet-optimistic-oracle-v2"
-)
+UMA_SUBGRAPH = "https://api.thegraph.com/subgraphs/name/umaprotocol/mainnet-optimistic-oracle-v2"
 
 DISPUTE_QUERY = """
 {
@@ -94,8 +93,7 @@ def _normalise(record: dict) -> dict[str, Any]:
         "resolution_source": None,
         "failure_category": None,
         "dispute_reason": (
-            f"Proposed: {record.get('proposedPrice')} | "
-            f"Settled: {record.get('settlementPrice')}"
+            f"Proposed: {record.get('proposedPrice')} | Settled: {record.get('settlementPrice')}"
         ),
         "resolution": str(record.get("settlementPrice")),
         "raw_data": record,

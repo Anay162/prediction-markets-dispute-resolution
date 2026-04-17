@@ -6,27 +6,25 @@ Unit tests for the six analyzer classes and the AnalyzerRunner.
 Strategy: mock the LLM to return known findings, then verify that
 post-processing, severity parsing, and deduplication work correctly.
 """
+
 from __future__ import annotations
 
 import json
-import uuid
-from datetime import date, timedelta
 
 import pytest
 
-from api.schemas.report import Finding, Severity, VulnerabilityCategory
-from core.analyzers.base import BaseAnalyzer, AnalyzerError
+from api.schemas.report import Severity, VulnerabilityCategory
+from core.analyzers.adversarial_resolution import AdversarialResolutionAnalyzer
+from core.analyzers.base import AnalyzerError, BaseAnalyzer
 from core.analyzers.runner import AnalyzerRunner, _text_overlap
 from core.analyzers.source_failure import SourceFailureAnalyzer
-from core.analyzers.definitional_ambiguity import DefinitionalAmbiguityAnalyzer
 from core.analyzers.threshold_gaming import ThresholdGamingAnalyzer
 from core.analyzers.timing_ambiguity import TimingAmbiguityAnalyzer
-from core.analyzers.adversarial_resolution import AdversarialResolutionAnalyzer
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def one_finding_response(
     severity: str = "high",
@@ -34,40 +32,47 @@ def one_finding_response(
     affected_clause: str = "test clause",
     rewrite: str = "improved clause",
 ) -> str:
-    return json.dumps([{
-        "severity": severity,
-        "description": description,
-        "affected_clause": affected_clause,
-        "rewrite": rewrite,
-        "evidence": ["test evidence"],
-        "confidence": 0.9,
-    }])
+    return json.dumps(
+        [
+            {
+                "severity": severity,
+                "description": description,
+                "affected_clause": affected_clause,
+                "rewrite": rewrite,
+                "evidence": ["test evidence"],
+                "confidence": 0.9,
+            }
+        ]
+    )
 
 
 def two_findings_response() -> str:
-    return json.dumps([
-        {
-            "severity": "critical",
-            "description": "First finding",
-            "affected_clause": "first clause",
-            "rewrite": "first rewrite",
-            "evidence": [],
-            "confidence": 1.0,
-        },
-        {
-            "severity": "low",
-            "description": "Second finding",
-            "affected_clause": "second clause",
-            "rewrite": "second rewrite",
-            "evidence": [],
-            "confidence": 0.6,
-        },
-    ])
+    return json.dumps(
+        [
+            {
+                "severity": "critical",
+                "description": "First finding",
+                "affected_clause": "first clause",
+                "rewrite": "first rewrite",
+                "evidence": [],
+                "confidence": 1.0,
+            },
+            {
+                "severity": "low",
+                "description": "Second finding",
+                "affected_clause": "second clause",
+                "rewrite": "second rewrite",
+                "evidence": [],
+                "confidence": 0.6,
+            },
+        ]
+    )
 
 
 # ---------------------------------------------------------------------------
 # Base analyzer: JSON parsing
 # ---------------------------------------------------------------------------
+
 
 class ConcreteAnalyzer(BaseAnalyzer):
     category = VulnerabilityCategory.definitional_ambiguity
@@ -113,15 +118,22 @@ async def test_analyzer_handles_wrapped_findings_object(mock_llm, parsed_sample_
 @pytest.mark.asyncio
 async def test_analyzer_skips_malformed_findings(mock_llm, parsed_sample_contract):
     """Malformed individual findings are skipped, not crashed on."""
-    mixed = json.dumps([
-        {"severity": "high", "description": "valid", "affected_clause": "x", "rewrite": "y"},
-        {"severity": "not_a_real_severity", "affected_clause": "x"},  # Missing description
-        {"severity": "low", "description": "also valid", "affected_clause": "a", "rewrite": "b"},
-    ])
+    mixed = json.dumps(
+        [
+            {"severity": "high", "description": "valid", "affected_clause": "x", "rewrite": "y"},
+            {"severity": "not_a_real_severity", "affected_clause": "x"},  # Missing description
+            {
+                "severity": "low",
+                "description": "also valid",
+                "affected_clause": "a",
+                "rewrite": "b",
+            },
+        ]
+    )
     mock_llm._responses = {"definitional": mixed}
     analyzer = ConcreteAnalyzer(mock_llm)
     findings = await analyzer.analyze(parsed_sample_contract)
-    assert len(findings) >= 2   # At least the two valid ones
+    assert len(findings) >= 2  # At least the two valid ones
 
 
 @pytest.mark.asyncio
@@ -134,12 +146,16 @@ async def test_analyzer_raises_on_complete_garbage(mock_llm, parsed_sample_contr
 
 @pytest.mark.asyncio
 async def test_severity_normalised_to_lowercase(mock_llm, parsed_sample_contract):
-    response = json.dumps([{
-        "severity": "CRITICAL",   # All caps
-        "description": "test",
-        "affected_clause": "clause",
-        "rewrite": "rewrite",
-    }])
+    response = json.dumps(
+        [
+            {
+                "severity": "CRITICAL",  # All caps
+                "description": "test",
+                "affected_clause": "clause",
+                "rewrite": "rewrite",
+            }
+        ]
+    )
     mock_llm._responses = {"definitional": response}
     analyzer = ConcreteAnalyzer(mock_llm)
     findings = await analyzer.analyze(parsed_sample_contract)
@@ -149,6 +165,7 @@ async def test_severity_normalised_to_lowercase(mock_llm, parsed_sample_contract
 # ---------------------------------------------------------------------------
 # Source failure: post-processing
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_source_failure_adds_dead_url_finding(mock_llm, parsed_sample_contract):
@@ -177,6 +194,7 @@ async def test_source_failure_adds_dead_url_finding(mock_llm, parsed_sample_cont
 # Threshold gaming: revision-risk annotation
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_threshold_gaming_annotates_gdp_revision_risk(mock_llm, parsed_sample_contract):
     """GDP threshold should have revision risk evidence injected."""
@@ -192,6 +210,7 @@ async def test_threshold_gaming_annotates_gdp_revision_risk(mock_llm, parsed_sam
 # Timing ambiguity: deterministic timezone check
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_timing_ambiguity_injects_tz_finding_when_llm_misses(
     mock_llm, parsed_sample_contract
@@ -202,8 +221,10 @@ async def test_timing_ambiguity_injects_tz_finding_when_llm_misses(
     # parsed_sample_contract has a Timeframe with timezone_specified=False
     findings = await analyzer.analyze(parsed_sample_contract)
     assert len(findings) >= 1
-    assert any("timezone" in f.description.lower() or "time zone" in f.description.lower()
-               for f in findings)
+    assert any(
+        "timezone" in f.description.lower() or "time zone" in f.description.lower()
+        for f in findings
+    )
 
 
 @pytest.mark.asyncio
@@ -218,8 +239,11 @@ async def test_timing_ambiguity_no_injection_when_llm_already_found_tz(
     }
     analyzer = TimingAmbiguityAnalyzer(mock_llm)
     findings = await analyzer.analyze(parsed_sample_contract)
-    tz_findings = [f for f in findings if "timezone" in f.description.lower()
-                   or "time zone" in f.description.lower()]
+    tz_findings = [
+        f
+        for f in findings
+        if "timezone" in f.description.lower() or "time zone" in f.description.lower()
+    ]
     assert len(tz_findings) == 1  # Not duplicated
 
 
@@ -227,21 +251,23 @@ async def test_timing_ambiguity_no_injection_when_llm_already_found_tz(
 # Adversarial resolution: prompt override
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
-async def test_adversarial_prompt_contains_bad_faith_instruction(
-    mock_llm, parsed_sample_contract
-):
+async def test_adversarial_prompt_contains_bad_faith_instruction(mock_llm, parsed_sample_contract):
     mock_llm._responses = {"adversarial": "[]"}
     analyzer = AdversarialResolutionAnalyzer(mock_llm)
     await analyzer.analyze(parsed_sample_contract)
-    assert "bad-faith" in mock_llm.last_user_prompt.lower() or \
-           "adversarial" in mock_llm.last_user_prompt.lower() or \
-           "financial position" in mock_llm.last_user_prompt.lower()
+    assert (
+        "bad-faith" in mock_llm.last_user_prompt.lower()
+        or "adversarial" in mock_llm.last_user_prompt.lower()
+        or "financial position" in mock_llm.last_user_prompt.lower()
+    )
 
 
 # ---------------------------------------------------------------------------
 # Runner: parallel execution and deduplication
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_runner_returns_all_findings(mock_llm, mock_enrichment, parsed_sample_contract):
@@ -286,15 +312,20 @@ async def test_runner_sorts_by_severity(mock_llm, mock_enrichment, parsed_sample
     mock_llm._responses = {
         "source failure": one_finding_response(severity="low", affected_clause="low clause"),
         "definitional": one_finding_response(severity="critical", affected_clause="crit clause"),
-        "threshold": "[]", "scope": "[]", "timing": "[]", "adversarial": "[]",
+        "threshold": "[]",
+        "scope": "[]",
+        "timing": "[]",
+        "adversarial": "[]",
     }
     runner = AnalyzerRunner(mock_llm, mock_enrichment)
     findings, _ = await runner.run_all(parsed_sample_contract)
     if len(findings) >= 2:
         severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
         for i in range(len(findings) - 1):
-            assert (severity_order[findings[i].severity.value] <=
-                    severity_order[findings[i + 1].severity.value])
+            assert (
+                severity_order[findings[i].severity.value]
+                <= severity_order[findings[i + 1].severity.value]
+            )
 
 
 def test_text_overlap_identical():

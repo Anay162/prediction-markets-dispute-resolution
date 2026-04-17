@@ -8,6 +8,7 @@ hundreds of disputed markets between 2018 and 2023.
 
 Data source: Augur's public subgraph on The Graph.
 """
+
 from __future__ import annotations
 
 import logging
@@ -17,9 +18,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-AUGUR_SUBGRAPH = (
-    "https://api.thegraph.com/subgraphs/name/augurproject/augur-v2-staging"
-)
+AUGUR_SUBGRAPH = "https://api.thegraph.com/subgraphs/name/augurproject/augur-v2-staging"
 
 DISPUTE_QUERY = """
 {
@@ -97,6 +96,7 @@ def _normalise(market: dict) -> dict[str, Any] | None:
     resolution_source = None
     try:
         import json
+
         extra = json.loads(extra_info)
         resolution_source = extra.get("resolutionSource") or extra.get("source")
     except Exception:

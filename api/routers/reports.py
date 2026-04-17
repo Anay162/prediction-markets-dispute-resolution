@@ -6,6 +6,7 @@ Report retrieval endpoints:
     GET    /v1/reports/{report_id}/pdf       PDF download
     GET    /v1/contracts/{contract_id}/reports  All reports for a contract
 """
+
 from __future__ import annotations
 
 import uuid
@@ -14,7 +15,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
 from api.dependencies import AuthDep, DBDep
-from api.schemas.report import ReportOutput, Finding, Severity, VulnerabilityCategory
+from api.schemas.report import Finding, ReportOutput, Severity, VulnerabilityCategory
 from data.repositories.contract_repo import get_report, list_reports_for_contract
 
 router = APIRouter()
@@ -51,19 +52,18 @@ async def get_report_pdf(
 
     try:
         from core.report.pdf_renderer import render_pdf
+
         pdf_bytes = await render_pdf(report)
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"PDF generation failed: {e}",
-        )
+        ) from e
 
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={
-            "Content-Disposition": f'attachment; filename="audit-report-{report_id}.pdf"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="audit-report-{report_id}.pdf"'},
     )
 
 

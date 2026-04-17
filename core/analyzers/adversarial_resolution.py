@@ -6,14 +6,14 @@ this looks for language that a motivated bad-faith party with financial
 incentive could weaponize to construct a credible dispute — even when
 the "obvious" resolution is clear to everyone.
 """
+
 from __future__ import annotations
 
 import logging
 
-from api.schemas.report import VulnerabilityCategory
+from api.schemas.report import Finding, VulnerabilityCategory
 from core.analyzers.base import BaseAnalyzer
 from core.parser.entity_extractor import ParsedContract
-from api.schemas.report import Finding
 
 logger = logging.getLogger(__name__)
 

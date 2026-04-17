@@ -6,6 +6,7 @@ Unit tests for core/scoring/rcs_calculator.py
 Covers: formula correctness, critical caps, empty input,
 category multipliers, and score label mapping.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -16,7 +17,9 @@ from api.schemas.report import Finding, Severity, VulnerabilityCategory
 from core.scoring.rcs_calculator import RCSCalculator, _score_to_label
 
 
-def make_finding(severity: Severity, category=VulnerabilityCategory.definitional_ambiguity) -> Finding:
+def make_finding(
+    severity: Severity, category=VulnerabilityCategory.definitional_ambiguity
+) -> Finding:
     return Finding(
         id=uuid.uuid4(),
         category=category,
@@ -30,6 +33,7 @@ def make_finding(severity: Severity, category=VulnerabilityCategory.definitional
 # ---------------------------------------------------------------------------
 # Base formula
 # ---------------------------------------------------------------------------
+
 
 def test_no_findings_returns_100():
     calc = RCSCalculator()
@@ -94,9 +98,9 @@ def test_score_floored_at_zero():
 def test_mixed_severities():
     calc = RCSCalculator()
     findings = [
-        make_finding(Severity.high),    # -12
+        make_finding(Severity.high),  # -12
         make_finding(Severity.medium),  # -5
-        make_finding(Severity.low),     # -2
+        make_finding(Severity.low),  # -2
     ]
     result = calc.calculate(findings)
     assert result.final_score == 81  # 100 - 19
@@ -152,19 +156,23 @@ def test_penalty_by_category_breakdown():
 # Score labels
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("score,expected_label", [
-    (100, "Well-specified"),
-    (90,  "Well-specified"),
-    (85,  "Well-specified"),
-    (84,  "Minor issues"),
-    (70,  "Minor issues"),
-    (69,  "Moderate risk"),
-    (50,  "Moderate risk"),
-    (49,  "High risk"),
-    (30,  "High risk"),
-    (29,  "Critical — do not publish"),
-    (0,   "Critical — do not publish"),
-])
+
+@pytest.mark.parametrize(
+    "score,expected_label",
+    [
+        (100, "Well-specified"),
+        (90, "Well-specified"),
+        (85, "Well-specified"),
+        (84, "Minor issues"),
+        (70, "Minor issues"),
+        (69, "Moderate risk"),
+        (50, "Moderate risk"),
+        (49, "High risk"),
+        (30, "High risk"),
+        (29, "Critical — do not publish"),
+        (0, "Critical — do not publish"),
+    ],
+)
 def test_score_labels(score, expected_label):
     assert _score_to_label(score) == expected_label
 
@@ -172,11 +180,13 @@ def test_score_labels(score, expected_label):
 def test_critical_cap_sets_correct_label():
     calc = RCSCalculator()
     result = calc.calculate([make_finding(Severity.critical)])
-    assert result.score_label == "Moderate risk"   # score=50 → "Moderate risk"
+    assert result.score_label == "Moderate risk"  # score=50 → "Moderate risk"
 
 
 def test_two_critical_cap_sets_correct_label():
     calc = RCSCalculator()
     findings = [make_finding(Severity.critical)] * 2
     result = calc.calculate(findings)
-    assert result.score_label == "Critical \u2014 do not publish"   # score=25 < 30 → "Critical — do not publish"
+    assert (
+        result.score_label == "Critical \u2014 do not publish"
+    )  # score=25 < 30 → "Critical — do not publish"

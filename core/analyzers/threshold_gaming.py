@@ -7,14 +7,14 @@ revision risk, or single-point-of-failure data dependencies.
 Post-processing: looks up each referenced data series to confirm
 whether it is a known revision-prone series.
 """
+
 from __future__ import annotations
 
 import logging
 
-from api.schemas.report import VulnerabilityCategory
+from api.schemas.report import Finding, VulnerabilityCategory
 from core.analyzers.base import BaseAnalyzer
 from core.parser.entity_extractor import ParsedContract
-from api.schemas.report import Finding
 
 logger = logging.getLogger(__name__)
 

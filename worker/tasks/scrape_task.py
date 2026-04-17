@@ -4,6 +4,7 @@ worker/tasks/scrape_task.py
 Nightly Celery task that runs all dispute scrapers and
 re-embeds any disputes that don't have embeddings yet.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -22,15 +23,17 @@ def scrape_disputes() -> dict:
 
 
 async def _scrape_async() -> dict:
-    from data.database import init_db, get_session
-    from data.scrapers.runner import run_all_scrapers
+    from sqlalchemy import select
+
+    from data.database import get_session, init_db
     from data.embeddings.encoder import embed_batch
-    from sqlalchemy import select, update
     from data.models.dispute import DisputeRecord
+    from data.scrapers.runner import run_all_scrapers
 
     init_db(os.environ["DATABASE_URL"])
 
     from integrations.llm.client import LLMClient
+
     llm = LLMClient(
         anthropic_api_key=os.environ["ANTHROPIC_API_KEY"],
         openai_api_key=os.environ["OPENAI_API_KEY"],

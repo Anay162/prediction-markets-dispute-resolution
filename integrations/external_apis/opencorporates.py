@@ -8,6 +8,7 @@ or recently acquired entities.
 API docs: https://api.opencorporates.com/documentation/API-Reference
 Free tier: 500 requests/month unauthenticated, more with API key.
 """
+
 from __future__ import annotations
 
 import logging
@@ -97,23 +98,27 @@ def extract_corporate_actions(company: dict[str, Any]) -> list[dict[str, Any]]:
     dissolution_date = company.get("dissolution_date")
 
     if status in ("Dissolved", "Inactive", "Liquidation", "Struck Off"):
-        actions.append({
-            "type": "dissolution",
-            "description": f"Company status: {status}",
-            "source": "OpenCorporates",
-            "date": dissolution_date,
-        })
+        actions.append(
+            {
+                "type": "dissolution",
+                "description": f"Company status: {status}",
+                "source": "OpenCorporates",
+                "date": dissolution_date,
+            }
+        )
 
     # Check for registered agent changes — often signal M&A prep
     for officer in company.get("officers", []):
         o = officer.get("officer", {})
         if o.get("position", "").lower() in ("registered agent", "statutory agent"):
             if o.get("end_date"):
-                actions.append({
-                    "type": "agent_change",
-                    "description": f"Registered agent change detected (end date: {o['end_date']})",
-                    "source": "OpenCorporates",
-                    "date": o.get("end_date"),
-                })
+                actions.append(
+                    {
+                        "type": "agent_change",
+                        "description": f"Registered agent change detected (end date: {o['end_date']})",
+                        "source": "OpenCorporates",
+                        "date": o.get("end_date"),
+                    }
+                )
 
     return actions

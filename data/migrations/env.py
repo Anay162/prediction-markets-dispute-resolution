@@ -3,6 +3,7 @@ data/migrations/env.py
 
 Alembic environment configuration for async SQLAlchemy.
 """
+
 import asyncio
 import os
 from logging.config import fileConfig
@@ -11,8 +12,6 @@ from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from data.models.contract import Base
-from data.models.dispute import DisputeRecord, MarketOutcome, ScoringWeight
-from data.models.api_key import APIKey
 
 config = context.config
 if config.config_file_name is not None:

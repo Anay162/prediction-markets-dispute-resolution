@@ -5,23 +5,23 @@ All database operations for contracts and reports.
 Repositories are the only place that touches SQLAlchemy models directly.
 The rest of the app works with Pydantic schemas.
 """
+
 from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
-from sqlalchemy import select, update, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from api.schemas.report import Finding, Severity
-from data.models.contract import Contract, Report, FindingRecord
-
+from api.schemas.report import Finding
+from data.models.contract import Contract, FindingRecord, Report
 
 # ------------------------------------------------------------------
 # Contract operations
 # ------------------------------------------------------------------
+
 
 async def create_contract(db: AsyncSession, contract_data: dict) -> Contract:
     """Insert a new contract row and return the ORM object."""
@@ -37,14 +37,12 @@ async def create_contract(db: AsyncSession, contract_data: dict) -> Contract:
         updated_at=datetime.utcnow(),
     )
     db.add(record)
-    await db.flush()    # Get the ID without committing
+    await db.flush()  # Get the ID without committing
     return record
 
 
 async def get_contract(db: AsyncSession, contract_id: uuid.UUID) -> Contract | None:
-    result = await db.execute(
-        select(Contract).where(Contract.id == contract_id)
-    )
+    result = await db.execute(select(Contract).where(Contract.id == contract_id))
     return result.scalar_one_or_none()
 
 
@@ -64,6 +62,7 @@ async def list_contracts(
 # ------------------------------------------------------------------
 # Report operations
 # ------------------------------------------------------------------
+
 
 async def create_report(
     db: AsyncSession,
@@ -137,9 +136,7 @@ async def get_report_by_job(
     job_id: uuid.UUID,
 ) -> Report | None:
     result = await db.execute(
-        select(Report)
-        .where(Report.job_id == job_id)
-        .options(selectinload(Report.findings))
+        select(Report).where(Report.job_id == job_id).options(selectinload(Report.findings))
     )
     return result.scalar_one_or_none()
 
@@ -149,8 +146,6 @@ async def list_reports_for_contract(
     contract_id: uuid.UUID,
 ) -> list[Report]:
     result = await db.execute(
-        select(Report)
-        .where(Report.contract_id == contract_id)
-        .order_by(desc(Report.created_at))
+        select(Report).where(Report.contract_id == contract_id).order_by(desc(Report.created_at))
     )
     return list(result.scalars().all())

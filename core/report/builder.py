@@ -9,6 +9,7 @@ Assembles the final ReportOutput from:
 Also assembles the full rewritten contract by applying all rewrites
 to the original resolution criteria in order of severity.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -29,9 +30,7 @@ def build_report(
     """
     Assemble the final ReportOutput.
     """
-    rewritten_contract = _assemble_rewritten_contract(
-        original_resolution_criteria, findings
-    )
+    rewritten_contract = _assemble_rewritten_contract(original_resolution_criteria, findings)
 
     return ReportOutput(
         id=uuid.uuid4(),
@@ -65,10 +64,7 @@ def _assemble_rewritten_contract(
         return original
 
     # Only include findings with actual rewrites that differ from affected clause
-    rewrites = [
-        f for f in findings
-        if f.rewrite and f.rewrite.strip() != f.affected_clause.strip()
-    ]
+    rewrites = [f for f in findings if f.rewrite and f.rewrite.strip() != f.affected_clause.strip()]
     if not rewrites:
         return original
 
@@ -92,9 +88,7 @@ def _assemble_rewritten_contract(
     for i, finding in enumerate(rewrites, 1):
         severity_label = finding.severity.value.upper()
         category_label = finding.category.value.replace("_", " ").title()
-        lines.append(
-            f"[{i}] {severity_label} — {category_label}"
-        )
+        lines.append(f"[{i}] {severity_label} — {category_label}")
         lines.append(f"Original: {finding.affected_clause}")
         lines.append(f"Rewritten: {finding.rewrite}")
         lines.append("")
